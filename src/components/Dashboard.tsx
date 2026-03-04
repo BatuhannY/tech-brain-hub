@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Bug, Pencil, Trash2, Terminal } from 'lucide-react';
+import { Plus, Bug, Pencil, Trash2, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import StatusBadge from '@/components/StatusBadge';
@@ -10,6 +10,16 @@ import IssueFormDialog from '@/components/IssueFormDialog';
 import AISearchBar from '@/components/AISearchBar';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import type { Tables } from '@/integrations/supabase/types';
 
 type IssueLog = Tables<'issue_logs'>;
@@ -20,6 +30,7 @@ const Dashboard = () => {
   const [searchResults, setSearchResults] = useState<IssueLog[] | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data: issues, refetch, isLoading } = useQuery({
     queryKey: ['issue_logs'],
@@ -33,41 +44,43 @@ const Dashboard = () => {
     },
   });
 
-  const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('issue_logs').delete().eq('id', id);
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    const { error } = await supabase.from('issue_logs').delete().eq('id', deleteId);
     if (error) {
       toast.error('Failed to delete');
     } else {
       toast.success('Issue deleted');
       refetch();
     }
+    setDeleteId(null);
   };
 
   const displayIssues = searchResults ?? issues ?? [];
 
+  const totalCount = issues?.length ?? 0;
+  const resolvedCount = issues?.filter(i => i.status === 'Resolved').length ?? 0;
+  const pendingCount = issues?.filter(i => i.status === 'Pending').length ?? 0;
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Terminal className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">Knowledge Hub</h1>
-              <p className="text-sm text-muted-foreground font-mono">Tech Issues Admin</p>
-            </div>
-          </div>
-          <Button onClick={() => { setEditingIssue(null); setFormOpen(true); }} className="gap-2">
+      <header className="sticky top-0 z-10 bg-card/80 backdrop-blur-xl border-b border-border">
+        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
+          <h1 className="text-lg font-semibold text-foreground">Knowledge Hub</h1>
+          <Button
+            onClick={() => { setEditingIssue(null); setFormOpen(true); }}
+            size="sm"
+            className="rounded-full gap-1.5"
+          >
             <Plus className="h-4 w-4" />
-            Add New Issue
+            New Issue
           </Button>
         </div>
       </header>
 
       {/* Main */}
-      <main className="container mx-auto px-4 py-6 space-y-6">
+      <main className="max-w-3xl mx-auto px-4 py-6 space-y-5">
         {/* AI Search */}
         <AISearchBar
           onResults={(results, query) => { setSearchResults(results); setSearchQuery(query); }}
@@ -76,26 +89,26 @@ const Dashboard = () => {
 
         {searchResults && (
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground font-mono">
-              AI results for "{searchQuery}" — {searchResults.length} found
+            <span className="text-sm text-muted-foreground">
+              Results for "{searchQuery}" — {searchResults.length} found
             </span>
-            <Button variant="ghost" size="sm" onClick={() => { setSearchResults(null); setSearchQuery(''); }}>
+            <Button variant="ghost" size="sm" className="text-primary text-sm h-auto p-0" onClick={() => { setSearchResults(null); setSearchQuery(''); }}>
               Clear
             </Button>
           </div>
         )}
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'Total', value: issues?.length ?? 0 },
-            { label: 'Resolved', value: issues?.filter(i => i.status === 'Resolved').length ?? 0 },
-            { label: 'Pending', value: issues?.filter(i => i.status === 'Pending').length ?? 0 },
+            { label: 'Total', value: totalCount, color: 'text-foreground' },
+            { label: 'Resolved', value: resolvedCount, color: 'text-status-resolved' },
+            { label: 'Pending', value: pendingCount, color: 'text-status-pending' },
           ].map(s => (
-            <Card key={s.label}>
-              <CardContent className="p-4">
-                <p className="text-sm text-muted-foreground font-mono">{s.label}</p>
-                <p className="text-2xl font-bold font-mono">{s.value}</p>
+            <Card key={s.label} className="shadow-none">
+              <CardContent className="p-4 text-center">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">{s.label}</p>
+                <p className={`text-2xl font-semibold mt-1 ${s.color}`}>{s.value}</p>
               </CardContent>
             </Card>
           ))}
@@ -103,72 +116,74 @@ const Dashboard = () => {
 
         {/* Issue List */}
         {isLoading ? (
-          <div className="text-center py-12 text-muted-foreground font-mono">Loading issues...</div>
+          <div className="text-center py-16 text-muted-foreground text-sm">Loading…</div>
         ) : displayIssues.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
-              <Bug className="h-12 w-12 text-muted-foreground/40" />
-              <p className="text-muted-foreground font-mono">No issues logged yet</p>
-              <Button variant="outline" onClick={() => { setEditingIssue(null); setFormOpen(true); }}>
-                Log your first issue
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Bug className="h-10 w-10 text-muted-foreground/30" />
+            <p className="text-muted-foreground text-sm">No issues logged yet</p>
+            <Button variant="outline" size="sm" className="rounded-full" onClick={() => { setEditingIssue(null); setFormOpen(true); }}>
+              Log your first issue
+            </Button>
+          </div>
         ) : (
-          <div className="space-y-2">
+          <Card className="shadow-none overflow-hidden divide-y divide-border">
             {displayIssues.map(issue => (
-              <Card
-                key={issue.id}
-                className="cursor-pointer hover:border-primary/30 transition-colors"
-                onClick={() => setExpandedId(expandedId === issue.id ? null : issue.id)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold truncate">{issue.title}</h3>
-                        <CategoryBadge category={issue.category} />
-                        <StatusBadge status={issue.status} />
-                      </div>
-                      {issue.description && (
-                        <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{issue.description}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground font-mono mt-2">
-                        {format(new Date(issue.created_at), 'MMM dd, yyyy · HH:mm')}
-                      </p>
+              <div key={issue.id}>
+                <div
+                  className="flex items-center gap-3 p-4 cursor-pointer hover:bg-accent/50 transition-colors"
+                  onClick={() => setExpandedId(expandedId === issue.id ? null : issue.id)}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-sm text-foreground truncate">{issue.title}</span>
                     </div>
-                    <div className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => { setEditingIssue(issue); setFormOpen(true); }}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive"
-                        onClick={() => handleDelete(issue.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <CategoryBadge category={issue.category} />
+                      <StatusBadge status={issue.status} />
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(issue.created_at), 'MMM dd, yyyy')}
+                      </span>
                     </div>
                   </div>
-                  {expandedId === issue.id && issue.solution_steps && (
-                    <div className="mt-4 pt-4 border-t border-border">
-                      <p className="text-xs text-muted-foreground font-mono mb-2">SOLUTION</p>
-                      <div
-                        className="prose prose-sm dark:prose-invert max-w-none text-sm"
-                        dangerouslySetInnerHTML={{ __html: issue.solution_steps }}
-                      />
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                  <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                      onClick={() => { setEditingIssue(issue); setFormOpen(true); }}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      onClick={() => setDeleteId(issue.id)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${expandedId === issue.id ? 'rotate-90' : ''}`} />
+                </div>
+                {expandedId === issue.id && (
+                  <div className="px-4 pb-4 space-y-2">
+                    {issue.description && (
+                      <p className="text-sm text-muted-foreground">{issue.description}</p>
+                    )}
+                    {issue.solution_steps && (
+                      <div className="bg-accent/50 rounded-lg p-4">
+                        <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Solution</p>
+                        <div
+                          className="prose prose-sm max-w-none text-sm text-foreground [&_p]:text-foreground [&_li]:text-foreground [&_code]:text-foreground"
+                          dangerouslySetInnerHTML={{ __html: issue.solution_steps }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             ))}
-          </div>
+          </Card>
         )}
       </main>
 
@@ -178,6 +193,24 @@ const Dashboard = () => {
         issue={editingIssue}
         onSaved={refetch}
       />
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this issue?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. The issue will be permanently removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

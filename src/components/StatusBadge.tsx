@@ -9,8 +9,9 @@ const StatusBadge = ({ status }: StatusBadgeProps) => {
   const isResolved = status === 'Resolved';
   return (
     <Badge
+      variant="secondary"
       className={cn(
-        'font-mono text-xs font-semibold border-0',
+        'text-[11px] font-medium border-0 rounded-full px-2 py-0.5',
         isResolved
           ? 'bg-status-resolved-bg text-status-resolved'
           : 'bg-status-pending-bg text-status-pending'

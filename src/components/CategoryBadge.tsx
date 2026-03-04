@@ -6,7 +6,7 @@ interface CategoryBadgeProps {
 
 const CategoryBadge = ({ category }: CategoryBadgeProps) => {
   return (
-    <Badge variant="secondary" className="font-mono text-xs">
+    <Badge variant="secondary" className="text-[11px] font-medium rounded-full px-2 py-0.5">
       {category}
     </Badge>
   );
