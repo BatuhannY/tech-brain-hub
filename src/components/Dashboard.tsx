@@ -10,6 +10,7 @@ import CategoryBadge from '@/components/CategoryBadge';
 import IssueFormDialog from '@/components/IssueFormDialog';
 import IssueDetail from '@/components/IssueDetail';
 import TrendingIssues from '@/components/TrendingIssues';
+import AIChat from '@/components/AIChat';
 import AISearchBar from '@/components/AISearchBar';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -183,12 +184,16 @@ const Dashboard = () => {
           <TabsList className="w-full">
             <TabsTrigger value="issues" className="flex-1">All Issues</TabsTrigger>
             <TabsTrigger value="trending" className="flex-1">Trending</TabsTrigger>
+            <TabsTrigger value="ai" className="flex-1">AI Agent</TabsTrigger>
           </TabsList>
           <TabsContent value="issues" className="space-y-5">
             <IssuesList />
           </TabsContent>
           <TabsContent value="trending">
             <TrendingIssues />
+          </TabsContent>
+          <TabsContent value="ai">
+            <AIChat />
           </TabsContent>
         </Tabs>
       </main>
