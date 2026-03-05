@@ -16,34 +16,46 @@ export type Database = {
     Tables: {
       issue_logs: {
         Row: {
+          ai_suggested_fix: string | null
           category: string
           created_at: string
           description: string | null
           id: string
+          internal_fix: string | null
+          report_count: number
           solution_steps: string | null
           status: string
           title: string
           updated_at: string
+          web_fix: string | null
         }
         Insert: {
+          ai_suggested_fix?: string | null
           category?: string
           created_at?: string
           description?: string | null
           id?: string
+          internal_fix?: string | null
+          report_count?: number
           solution_steps?: string | null
           status?: string
           title: string
           updated_at?: string
+          web_fix?: string | null
         }
         Update: {
+          ai_suggested_fix?: string | null
           category?: string
           created_at?: string
           description?: string | null
           id?: string
+          internal_fix?: string | null
+          report_count?: number
           solution_steps?: string | null
           status?: string
           title?: string
           updated_at?: string
+          web_fix?: string | null
         }
         Relationships: []
       }
