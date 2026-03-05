@@ -2,3 +2,6 @@ project_id = "jjcrfaznizffenslgsxp"
 
 [functions.ai-search]
 verify_jwt = false
+
+[functions.ai-categorize]
+verify_jwt = false
