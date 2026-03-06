@@ -113,7 +113,7 @@ const AIChat = ({ onIssueCreated }: AIChatProps) => {
                     : 'bg-muted/50 border border-border rounded-bl-md'
                 }`}>
                   {msg.role === 'assistant' ? (
-                    <div className="prose prose-sm max-w-none text-sm [&_p]:text-foreground [&_li]:text-foreground [&_strong]:text-foreground [&_h1]:text-foreground [&_h2]:text-foreground [&_h3]:text-foreground [&_code]:text-foreground [&_code]:bg-secondary [&_p]:my-1.5 [&_ul]:my-1.5 [&_ol]:my-1.5">
+                    <div className="prose prose-sm max-w-none text-sm [&_p]:text-foreground [&_li]:text-foreground [&_strong]:text-foreground [&_h1]:text-foreground [&_h2]:text-foreground [&_h3]:text-foreground [&_code]:text-foreground [&_code]:bg-secondary [&_p]:my-2 [&_ul]:my-2 [&_ol]:my-2 [&_h2]:mt-4 [&_h2]:mb-2 [&_h3]:mt-3 [&_h3]:mb-1 [&_blockquote]:border-l-4 [&_blockquote]:border-green-500 [&_blockquote]:bg-green-50 [&_blockquote]:dark:bg-green-950/30 [&_blockquote]:px-4 [&_blockquote]:py-3 [&_blockquote]:my-3 [&_blockquote]:rounded-r-lg [&_blockquote_p]:text-green-800 [&_blockquote_p]:dark:text-green-300">
                       <ReactMarkdown>{msg.content}</ReactMarkdown>
                     </div>
                   ) : (

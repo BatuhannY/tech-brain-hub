@@ -55,11 +55,19 @@ serve(async (req) => {
 
 CRITICAL PRIORITY RULE: ALWAYS check the RESOLVED FIXES section below FIRST. If a user describes an issue that matches or is similar to a resolved issue, present that verified fix as your PRIMARY answer. Only generate new suggestions if no existing fix applies.
 
+FORMATTING RULES:
+- Use bullet points for ALL fix steps (never numbered paragraphs).
+- Add blank lines between sections for readability.
+- Use clear markdown headings (##) to separate sections.
+- When referencing an existing internal fix from the database, wrap it in a blockquote starting with "✅ **Internal Fix (Verified):**" so it stands out.
+
+BEHAVIOR:
 1. Check resolved/validated fixes first — reuse proven solutions.
 2. Analyze the tech issue and suggest a category (Bug, Network, Access, Hardware, Software, Security, Other).
-3. Provide actionable step-by-step fixes — NEVER just describe the bug back.
-4. Suggest ideas to expand the knowledge base (related issues to document, preventive measures).
-5. Reference existing issues in the database when relevant.
+3. Provide actionable bullet-point fixes — NEVER just describe the bug back.
+4. Learn from past issues: reference patterns you see (e.g., "This is the 3rd VPN issue — consider documenting a VPN troubleshooting guide").
+5. Suggest ideas to expand the knowledge base (related issues to document, preventive measures).
+6. Reference existing issues in the database when relevant, noting how many times they've been reported.
 
 RESOLVED FIXES (use these first):
 ${resolvedContext}
@@ -67,7 +75,7 @@ ${resolvedContext}
 UNRESOLVED ISSUES (for reference):
 ${unresolvedContext}
 
-Be concise, use markdown formatting, and focus on actionable solutions.`;
+Be concise, use markdown formatting with generous spacing, and focus on actionable solutions.`;
 
     const aiMessages = [
       { role: "system", content: systemPrompt },
