@@ -9,7 +9,11 @@ import ReactMarkdown from 'react-markdown';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 
-const AIChat = () => {
+interface AIChatProps {
+  onIssueCreated?: () => void;
+}
+
+const AIChat = ({ onIssueCreated }: AIChatProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -53,6 +57,7 @@ const AIChat = () => {
       if (data.issueCreated) {
         setLastIssueAdded(true);
         toast.success('Issue added to the database!');
+        onIssueCreated?.();
       }
     } catch (err: any) {
       toast.error(err.message || 'AI request failed');
