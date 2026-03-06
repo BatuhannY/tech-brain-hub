@@ -186,13 +186,13 @@ const Dashboard = () => {
             <TabsTrigger value="trending" className="flex-1">Trending</TabsTrigger>
             <TabsTrigger value="ai" className="flex-1">AI Agent</TabsTrigger>
           </TabsList>
-          <TabsContent value="issues" className="space-y-5">
+          <TabsContent value="issues" className="space-y-5" forceMount className-wrapper="hidden">
             <IssuesList />
           </TabsContent>
-          <TabsContent value="trending">
+          <TabsContent value="trending" forceMount className-wrapper="hidden">
             <TrendingIssues />
           </TabsContent>
-          <TabsContent value="ai">
+          <TabsContent value="ai" forceMount className-wrapper="hidden">
             <AIChat />
           </TabsContent>
         </Tabs>
