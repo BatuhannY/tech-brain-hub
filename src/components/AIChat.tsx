@@ -3,8 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Card } from '@/components/ui/card';
-import { Send, Loader2, Bot, User, CheckCircle2 } from 'lucide-react';
+import { Send, Loader2, Bot, User, CheckCircle2, Sparkles, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 
@@ -62,77 +61,110 @@ const AIChat = () => {
     }
   };
 
+  const handleClear = () => {
+    setMessages([]);
+    setLastIssueAdded(false);
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-220px)] min-h-[400px]">
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-3 pb-4">
-        {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-            <Bot className="h-12 w-12 text-muted-foreground/30" />
+      <div ref={scrollRef} className="flex-1 overflow-y-auto pb-4 pr-1">
+        {messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-6">
+            <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <Sparkles className="h-8 w-8 text-primary" />
+            </div>
             <div>
-              <p className="text-sm font-medium text-foreground">AI Issue Analyst</p>
-              <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-                Describe a tech issue and I'll analyze it, suggest a category, provide fixes, and help expand your knowledge base.
+              <p className="text-base font-semibold text-foreground">AI Issue Analyst</p>
+              <p className="text-sm text-muted-foreground mt-2 max-w-sm leading-relaxed">
+                Describe a tech issue and I'll analyze it, suggest fixes from our knowledge base, and help categorize it for future reference.
               </p>
             </div>
-          </div>
-        )}
-        {messages.map((msg, i) => (
-          <div key={i} className={`flex gap-2.5 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            {msg.role === 'assistant' && (
-              <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                <Bot className="h-3.5 w-3.5 text-primary" />
-              </div>
-            )}
-            <Card className={`max-w-[80%] px-3.5 py-2.5 shadow-none ${
-              msg.role === 'user'
-                ? 'bg-primary text-primary-foreground border-0'
-                : 'bg-card border-border'
-            }`}>
-              {msg.role === 'assistant' ? (
-                <div className="prose prose-sm max-w-none text-sm [&_p]:text-foreground [&_li]:text-foreground [&_strong]:text-foreground [&_h1]:text-foreground [&_h2]:text-foreground [&_h3]:text-foreground [&_code]:text-foreground [&_code]:bg-secondary">
-                  <ReactMarkdown>{msg.content}</ReactMarkdown>
-                </div>
-              ) : (
-                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-              )}
-            </Card>
-            {msg.role === 'user' && (
-              <div className="h-7 w-7 rounded-full bg-secondary flex items-center justify-center shrink-0 mt-0.5">
-                <User className="h-3.5 w-3.5 text-muted-foreground" />
-              </div>
-            )}
-          </div>
-        ))}
-        {loading && (
-          <div className="flex gap-2.5">
-            <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <Bot className="h-3.5 w-3.5 text-primary" />
+            <div className="flex flex-wrap gap-2 mt-2 max-w-md justify-center">
+              {['VPN not connecting', 'Outlook keeps crashing', 'Can\'t access shared drive'].map(hint => (
+                <button
+                  key={hint}
+                  onClick={() => setInput(hint)}
+                  className="text-xs px-3 py-1.5 rounded-full border border-border bg-card text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                >
+                  {hint}
+                </button>
+              ))}
             </div>
-            <Card className="px-3.5 py-2.5 shadow-none bg-card border-border">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            </Card>
           </div>
-        )}
-        {lastIssueAdded && (
-          <div className="flex items-center gap-1.5 text-xs text-green-600 pl-9">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            Issue saved to database
+        ) : (
+          <div className="space-y-4">
+            {messages.map((msg, i) => (
+              <div key={i} className={`flex gap-2.5 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                {msg.role === 'assistant' && (
+                  <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <Bot className="h-3.5 w-3.5 text-primary" />
+                  </div>
+                )}
+                <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                  msg.role === 'user'
+                    ? 'bg-primary text-primary-foreground rounded-br-md'
+                    : 'bg-muted/50 border border-border rounded-bl-md'
+                }`}>
+                  {msg.role === 'assistant' ? (
+                    <div className="prose prose-sm max-w-none text-sm [&_p]:text-foreground [&_li]:text-foreground [&_strong]:text-foreground [&_h1]:text-foreground [&_h2]:text-foreground [&_h3]:text-foreground [&_code]:text-foreground [&_code]:bg-secondary [&_p]:my-1.5 [&_ul]:my-1.5 [&_ol]:my-1.5">
+                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  )}
+                </div>
+                {msg.role === 'user' && (
+                  <div className="h-7 w-7 rounded-lg bg-secondary flex items-center justify-center shrink-0 mt-0.5">
+                    <User className="h-3.5 w-3.5 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+            ))}
+            {loading && (
+              <div className="flex gap-2.5">
+                <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Bot className="h-3.5 w-3.5 text-primary" />
+                </div>
+                <div className="rounded-2xl rounded-bl-md bg-muted/50 border border-border px-4 py-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:0ms]" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:150ms]" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:300ms]" />
+                  </div>
+                </div>
+              </div>
+            )}
+            {lastIssueAdded && (
+              <div className="flex items-center gap-1.5 text-xs text-green-600 pl-9">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Issue saved to database
+              </div>
+            )}
           </div>
         )}
       </div>
 
       {/* Input */}
       <div className="border-t border-border pt-3 space-y-2.5">
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="addIssue"
-            checked={addAsIssue}
-            onCheckedChange={(v) => setAddAsIssue(!!v)}
-          />
-          <label htmlFor="addIssue" className="text-xs text-muted-foreground cursor-pointer select-none">
-            Add as a new issue
-          </label>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="addIssue"
+              checked={addAsIssue}
+              onCheckedChange={(v) => setAddAsIssue(!!v)}
+            />
+            <label htmlFor="addIssue" className="text-xs text-muted-foreground cursor-pointer select-none">
+              Add as a new issue
+            </label>
+          </div>
+          {messages.length > 0 && (
+            <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground gap-1" onClick={handleClear}>
+              <RotateCcw className="h-3 w-3" />
+              Clear
+            </Button>
+          )}
         </div>
         <div className="flex gap-2">
           <Textarea
@@ -140,10 +172,10 @@ const AIChat = () => {
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
             placeholder="Describe a tech issue..."
-            className="min-h-[44px] max-h-32 resize-none text-sm"
+            className="min-h-[44px] max-h-32 resize-none text-sm rounded-xl"
             rows={1}
           />
-          <Button onClick={handleSend} disabled={loading || !input.trim()} size="icon" className="shrink-0 h-11 w-11">
+          <Button onClick={handleSend} disabled={loading || !input.trim()} size="icon" className="shrink-0 h-11 w-11 rounded-xl">
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </div>

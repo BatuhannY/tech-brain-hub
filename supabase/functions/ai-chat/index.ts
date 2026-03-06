@@ -24,36 +24,56 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch existing issues for context
+    // Fetch existing issues with full fix data
     const { data: existingIssues } = await supabase
       .from("issue_logs")
-      .select("title, category, status, description")
-      .order("created_at", { ascending: false })
+      .select("title, category, status, description, internal_fix, ai_suggested_fix, web_fix, solution_steps, report_count")
+      .order("report_count", { ascending: false })
       .limit(50);
 
-    const dbContext = (existingIssues || []).map(i =>
-      `- [${i.category}/${i.status}] ${i.title}`
-    ).join("\n");
+    const allIssues = existingIssues || [];
+
+    // Separate resolved/validated from unresolved
+    const resolved = allIssues.filter(i => i.status === "Validated" || i.status === "Resolved");
+    const unresolved = allIssues.filter(i => i.status !== "Validated" && i.status !== "Resolved");
+
+    const resolvedContext = resolved.length > 0
+      ? resolved.map(i => {
+          const fix = i.internal_fix || i.ai_suggested_fix || i.web_fix || i.solution_steps || "No fix recorded";
+          return `- [${i.category}/${i.status}] ${i.title} (reported ${i.report_count}x)\n  Fix: ${fix}`;
+        }).join("\n")
+      : "None yet";
+
+    const unresolvedContext = unresolved.length > 0
+      ? unresolved.map(i => {
+          const partialFix = i.ai_suggested_fix ? `\n  AI suggestion: ${i.ai_suggested_fix}` : "";
+          return `- [${i.category}/${i.status}] ${i.title} (reported ${i.report_count}x)${partialFix}`;
+        }).join("\n")
+      : "None";
 
     const systemPrompt = `You are an expert IT support AI agent for a Knowledge Hub. Your role:
-1. Analyze tech issues described by the user.
-2. Suggest a category (Bug, Network, Access, Hardware, Software, Security, Other).
-3. Provide actionable fixes — never just describe the bug back.
-4. Suggest ideas to expand the knowledge base (related issues to document, preventive measures, etc.).
+
+CRITICAL PRIORITY RULE: ALWAYS check the RESOLVED FIXES section below FIRST. If a user describes an issue that matches or is similar to a resolved issue, present that verified fix as your PRIMARY answer. Only generate new suggestions if no existing fix applies.
+
+1. Check resolved/validated fixes first — reuse proven solutions.
+2. Analyze the tech issue and suggest a category (Bug, Network, Access, Hardware, Software, Security, Other).
+3. Provide actionable step-by-step fixes — NEVER just describe the bug back.
+4. Suggest ideas to expand the knowledge base (related issues to document, preventive measures).
 5. Reference existing issues in the database when relevant.
 
-Current issues in the database:
-${dbContext || "None yet"}
+RESOLVED FIXES (use these first):
+${resolvedContext}
+
+UNRESOLVED ISSUES (for reference):
+${unresolvedContext}
 
 Be concise, use markdown formatting, and focus on actionable solutions.`;
 
-    // Build AI messages
     const aiMessages = [
       { role: "system", content: systemPrompt },
       ...messages.map((m: any) => ({ role: m.role, content: m.content })),
     ];
 
-    // If addAsIssue, use tool calling to extract structured data
     const body: any = {
       model: "google/gemini-3-flash-preview",
       messages: aiMessages,
@@ -120,7 +140,6 @@ Be concise, use markdown formatting, and focus on actionable solutions.`;
         const parsed = JSON.parse(toolCall.function.arguments);
         reply = parsed.reply;
 
-        // Insert into database
         const { error: insertErr } = await supabase.from("issue_logs").insert({
           title: parsed.title,
           description: parsed.description,

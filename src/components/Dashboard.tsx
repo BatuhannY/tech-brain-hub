@@ -32,6 +32,7 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('issues');
 
   const { data: issues, refetch, isLoading } = useQuery({
     queryKey: ['issue_logs'],
@@ -180,21 +181,21 @@ const Dashboard = () => {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-6">
-        <Tabs defaultValue="issues" className="space-y-5">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
           <TabsList className="w-full">
             <TabsTrigger value="issues" className="flex-1">All Issues</TabsTrigger>
             <TabsTrigger value="trending" className="flex-1">Trending</TabsTrigger>
             <TabsTrigger value="ai" className="flex-1">AI Agent</TabsTrigger>
           </TabsList>
-          <TabsContent value="issues" className="space-y-5">
+          <div className={activeTab === 'issues' ? 'space-y-5' : 'hidden'}>
             <IssuesList />
-          </TabsContent>
-          <TabsContent value="trending">
+          </div>
+          <div className={activeTab === 'trending' ? '' : 'hidden'}>
             <TrendingIssues />
-          </TabsContent>
-          <TabsContent value="ai">
+          </div>
+          <div className={activeTab === 'ai' ? '' : 'hidden'}>
             <AIChat />
-          </TabsContent>
+          </div>
         </Tabs>
       </main>
 
