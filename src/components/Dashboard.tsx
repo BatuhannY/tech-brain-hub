@@ -43,6 +43,8 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const Dashboard = () => {
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
   const [formOpen, setFormOpen] = useState(false);
   const [editingIssue, setEditingIssue] = useState<any>(null);
   const [searchResults, setSearchResults] = useState<any[] | null>(null);
