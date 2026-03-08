@@ -42,7 +42,7 @@ const severityColor: Record<string, string> = {
   low: 'bg-muted text-muted-foreground',
 };
 
-const KnowledgeHealth = () => {
+const KnowledgeHealth = ({ onCreateIssue }: KnowledgeHealthProps = {}) => {
   const [healthData, setHealthData] = useState<HealthData | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
 
