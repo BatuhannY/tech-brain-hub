@@ -2,18 +2,14 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, BookOpen, CheckCircle2, Shield, Lightbulb, Loader2, Sparkles } from 'lucide-react';
+import { Search, CheckCircle2, Shield, Lightbulb, Loader2, Sparkles, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
-import ReactMarkdown from 'react-markdown';
 import CategoryBadge from '@/components/CategoryBadge';
 
-interface PlaybookEntry {
+interface RefinedEntry {
   id: string;
-  title: string;
-  category: string;
   summary: string;
   steps: string[];
   prevention: string;
@@ -21,102 +17,98 @@ interface PlaybookEntry {
 
 const PlaybookView = () => {
   const [filter, setFilter] = useState('');
-  const [entries, setEntries] = useState<PlaybookEntry[]>([]);
-  const [generating, setGenerating] = useState(false);
-  const [generated, setGenerated] = useState(false);
+  const [refinedMap, setRefinedMap] = useState<Record<string, RefinedEntry>>({});
+  const [refiningIds, setRefiningIds] = useState<Set<string>>(new Set());
+  const [bulkRefining, setBulkRefining] = useState(false);
 
   const { data: issues, isLoading } = useQuery({
-    queryKey: ['issue_logs'],
+    queryKey: ['playbook_issues'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('issue_logs')
         .select('*')
-        .order('created_at', { ascending: false });
+        .in('status', ['Resolved', 'Validated'])
+        .order('updated_at', { ascending: false });
       if (error) throw error;
-      return data as any[];
+      return data;
     },
   });
 
-  const validatedIssues = (issues ?? []).filter(
-    (i) => i.status === 'Validated' && i.internal_fix
-  );
+  const playbookIssues = issues ?? [];
 
-  const generatePlaybook = async () => {
-    if (!validatedIssues.length) {
-      toast.error('No validated issues with fixes to generate playbook from');
-      return;
-    }
-    setGenerating(true);
+  const parseSteps = (fix: string | null): string[] => {
+    if (!fix) return ['No fix details available.'];
+    // Try to split by numbered steps, newlines, or bullet points
+    const lines = fix.split(/\n|(?=\d+\.\s)/).map(l => l.replace(/^[\d]+\.\s*/, '').replace(/^[-•]\s*/, '').trim()).filter(Boolean);
+    return lines.length > 0 ? lines : [fix];
+  };
+
+  const refineWithAI = async (issue: any) => {
+    setRefiningIds(prev => new Set(prev).add(issue.id));
     try {
       const { data, error } = await supabase.functions.invoke('ai-analytics', {
         body: {
           mode: 'generate-playbook',
-          issues: validatedIssues.map((i) => ({
-            id: i.id,
-            title: i.title,
-            category: i.category,
-            description: i.description,
-            internal_fix: i.internal_fix,
-          })),
+          issues: [{ id: issue.id, title: issue.title, category: issue.category, description: issue.description, internal_fix: issue.internal_fix }],
         },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      setEntries(data.entries || []);
-      setGenerated(true);
+      const entry = data.entries?.[0];
+      if (entry) {
+        setRefinedMap(prev => ({ ...prev, [issue.id]: { id: entry.id, summary: entry.summary, steps: entry.steps, prevention: entry.prevention } }));
+      }
     } catch (err: any) {
-      toast.error(err.message || 'Failed to generate playbook');
+      toast.error(err.message || 'Failed to refine entry');
     } finally {
-      setGenerating(false);
+      setRefiningIds(prev => { const s = new Set(prev); s.delete(issue.id); return s; });
     }
   };
 
-  const filtered = entries.filter(
-    (e) =>
-      e.title.toLowerCase().includes(filter.toLowerCase()) ||
-      e.category.toLowerCase().includes(filter.toLowerCase()) ||
-      e.summary.toLowerCase().includes(filter.toLowerCase())
+  const refineAll = async () => {
+    const unrefined = playbookIssues.filter(i => !refinedMap[i.id]);
+    if (!unrefined.length) { toast.info('All entries are already refined'); return; }
+    setBulkRefining(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-analytics', {
+        body: {
+          mode: 'generate-playbook',
+          issues: unrefined.map(i => ({ id: i.id, title: i.title, category: i.category, description: i.description, internal_fix: i.internal_fix })),
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const newMap: Record<string, RefinedEntry> = { ...refinedMap };
+      (data.entries || []).forEach((e: any) => { newMap[e.id] = { id: e.id, summary: e.summary, steps: e.steps, prevention: e.prevention }; });
+      setRefinedMap(newMap);
+      toast.success(`Refined ${data.entries?.length || 0} entries`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to refine entries');
+    } finally {
+      setBulkRefining(false);
+    }
+  };
+
+  const filtered = playbookIssues.filter(i =>
+    i.title.toLowerCase().includes(filter.toLowerCase()) ||
+    i.category.toLowerCase().includes(filter.toLowerCase())
   );
 
   if (isLoading) {
-    return (
-      <div className="text-center py-16 text-muted-foreground text-sm">Loading…</div>
-    );
+    return <div className="text-center py-16 text-muted-foreground text-sm">Loading…</div>;
   }
 
-  if (!generated) {
+  if (!playbookIssues.length) {
     return (
       <Card className="shadow-none">
         <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
           <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center">
             <BookOpen className="h-8 w-8 text-primary" />
           </div>
-          <div className="text-center">
-            <p className="font-semibold text-foreground">IT Playbook</p>
-            <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-              Generate a clean, user-friendly playbook from your {validatedIssues.length} validated fixes. Each entry is AI-refined with a summary, step-by-step fix, and prevention tip.
-            </p>
-          </div>
-          <Button
-            onClick={generatePlaybook}
-            disabled={generating || !validatedIssues.length}
-            className="gap-2 rounded-full"
-          >
-            {generating ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Generating…
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4" /> Generate Playbook
-              </>
-            )}
-          </Button>
-          {!validatedIssues.length && (
-            <p className="text-xs text-muted-foreground">
-              No validated issues with fixes yet. Validate some issues first in the Issues tab.
-            </p>
-          )}
+          <p className="font-semibold text-foreground">No Playbook Entries Yet</p>
+          <p className="text-sm text-muted-foreground max-w-sm text-center">
+            Resolve or validate issues in the Issues tab — they'll automatically appear here as playbook entries.
+          </p>
         </CardContent>
       </Card>
     );
@@ -124,94 +116,82 @@ const PlaybookView = () => {
 
   return (
     <div className="space-y-5">
-      {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder="Search playbook entries…"
-          className="pl-10 text-sm"
-        />
+        <Input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Search playbook entries…" className="pl-10 text-sm" />
       </div>
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {filtered.length} playbook {filtered.length === 1 ? 'entry' : 'entries'}
+          {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
         </p>
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1.5 text-xs"
-          onClick={generatePlaybook}
-          disabled={generating}
-        >
-          {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-          Refresh
+        <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={refineAll} disabled={bulkRefining}>
+          {bulkRefining ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+          AI Refine All
         </Button>
       </div>
 
-      {/* Cards */}
       <div className="space-y-4">
-        {filtered.map((entry) => (
-          <Card key={entry.id} className="shadow-none hover:shadow-md transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between gap-2">
-                <CardTitle className="text-base font-semibold leading-snug">
-                  {entry.title}
-                </CardTitle>
-                <CategoryBadge category={entry.category} />
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-0">
-              {/* Summary */}
-              <div>
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <Lightbulb className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-xs font-semibold text-primary uppercase tracking-wide">
-                    Issue Summary
-                  </span>
-                </div>
-                <p className="text-sm text-foreground leading-relaxed">
-                  {entry.summary}
-                </p>
-              </div>
+        {filtered.map((issue) => {
+          const refined = refinedMap[issue.id];
+          const isRefining = refiningIds.has(issue.id);
+          const steps = refined ? refined.steps : parseSteps(issue.internal_fix);
+          const summary = refined?.summary || issue.description || 'No description available.';
+          const prevention = refined?.prevention;
 
-              {/* Steps */}
-              <div>
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-status-resolved" />
-                  <span className="text-xs font-semibold text-status-resolved uppercase tracking-wide">
-                    Step-by-Step Fix
-                  </span>
+          return (
+            <Card key={issue.id} className="shadow-none hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between gap-2">
+                  <CardTitle className="text-base font-semibold leading-snug">{issue.title}</CardTitle>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <CategoryBadge category={issue.category} />
+                    {!refined && (
+                      <Button variant="ghost" size="sm" className="gap-1 text-xs h-7 px-2" onClick={() => refineWithAI(issue)} disabled={isRefining}>
+                        {isRefining ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                        Refine
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <ol className="space-y-1.5">
-                  {entry.steps.map((step, i) => (
-                    <li key={i} className="text-sm text-foreground flex items-start gap-2.5">
-                      <span className="text-xs font-mono font-bold text-muted-foreground mt-0.5 shrink-0 w-5 text-right">
-                        {i + 1}.
-                      </span>
-                      <span className="leading-relaxed">{step}</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-0">
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <Lightbulb className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-xs font-semibold text-primary uppercase tracking-wide">Issue Summary</span>
+                  </div>
+                  <p className="text-sm text-foreground leading-relaxed">{summary}</p>
+                </div>
 
-              {/* Prevention */}
-              <div className="rounded-lg bg-accent/50 border border-border p-3">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <Shield className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    Prevention Tip
-                  </span>
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-status-resolved" />
+                    <span className="text-xs font-semibold text-status-resolved uppercase tracking-wide">Step-by-Step Fix</span>
+                  </div>
+                  <ol className="space-y-1.5">
+                    {steps.map((step, i) => (
+                      <li key={i} className="text-sm text-foreground flex items-start gap-2.5">
+                        <span className="text-xs font-mono font-bold text-muted-foreground mt-0.5 shrink-0 w-5 text-right">{i + 1}.</span>
+                        <span className="leading-relaxed">{step}</span>
+                      </li>
+                    ))}
+                  </ol>
                 </div>
-                <p className="text-sm text-foreground leading-relaxed">
-                  {entry.prevention}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+
+                {prevention && (
+                  <div className="rounded-lg bg-accent/50 border border-border p-3">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Shield className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Prevention Tip</span>
+                    </div>
+                    <p className="text-sm text-foreground leading-relaxed">{prevention}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {filtered.length === 0 && (
