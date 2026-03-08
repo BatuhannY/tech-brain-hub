@@ -47,7 +47,7 @@ const PlaybookView = () => {
       const { data, error } = await supabase
         .from('issue_logs')
         .select('*')
-        .in('status', ['Resolved', 'Validated'])
+        .in('status', ['Resolved'])
         .order('updated_at', { ascending: false });
       if (error) throw error;
       return data;

@@ -34,9 +34,9 @@ serve(async (req) => {
 
     const allIssues = existingIssues || [];
 
-    // Separate resolved/validated from unresolved
-    const resolved = allIssues.filter(i => i.status === "Validated" || i.status === "Resolved");
-    const unresolved = allIssues.filter(i => i.status !== "Validated" && i.status !== "Resolved");
+    // Separate resolved from unresolved
+    const resolved = allIssues.filter(i => i.status === "Resolved");
+    const unresolved = allIssues.filter(i => i.status !== "Resolved");
 
     const resolvedContext = resolved.length > 0
       ? resolved.map(i => {
@@ -63,7 +63,7 @@ FORMATTING RULES:
 - When referencing an existing internal fix from the database, wrap it in a blockquote starting with "✅ **Internal Fix (Verified):**" so it stands out.
 
 BEHAVIOR:
-1. Check resolved/validated fixes first — reuse proven solutions.
+1. Check resolved fixes first — reuse proven solutions.
 2. Analyze the tech issue and suggest a category (Bug, Network, Access, Hardware, Software, Security, Other).
 3. Provide actionable bullet-point fixes — NEVER just describe the bug back.
 4. Learn from past issues: reference patterns you see (e.g., "This is the 3rd VPN issue — consider documenting a VPN troubleshooting guide").

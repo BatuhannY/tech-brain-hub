@@ -93,7 +93,7 @@ const HealthDashboard = () => {
   }
 
   const totalCount = issues?.length ?? 0;
-  const validatedCount = issues?.filter((i) => i.status === 'Validated').length ?? 0;
+  const validatedCount = issues?.filter((i) => i.status === 'Resolved').length ?? 0;
   const unresolvedCount = issues?.filter((i) => i.status === 'Unresolved').length ?? 0;
 
   return (
@@ -146,7 +146,7 @@ const HealthDashboard = () => {
       <div className="grid grid-cols-3 gap-3">
         {[
           { label: 'Total', value: totalCount, color: 'text-foreground' },
-          { label: 'Validated', value: validatedCount, color: 'text-status-resolved' },
+          { label: 'Resolved', value: validatedCount, color: 'text-status-resolved' },
           { label: 'Unresolved', value: unresolvedCount, color: 'text-status-pending' },
         ].map((s) => (
           <Card key={s.label} className="shadow-none">
