@@ -137,7 +137,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-3 gap-3">
         {[
           { label: 'Total', value: totalCount, color: 'text-foreground' },
-          { label: 'Validated', value: validatedCount, color: 'text-status-resolved' },
+          { label: 'Resolved', value: validatedCount, color: 'text-status-resolved' },
           { label: 'Unresolved', value: unresolvedCount, color: 'text-status-pending' },
         ].map(s => (
           <Card key={s.label} className="shadow-none">

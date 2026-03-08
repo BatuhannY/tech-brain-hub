@@ -329,7 +329,7 @@ const IssueFormDialog = ({ open, onOpenChange, issue, onSaved }: IssueFormDialog
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Unresolved">Unresolved</SelectItem>
-                      <SelectItem value="Validated">Validated</SelectItem>
+                      <SelectItem value="Resolved">Resolved</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

@@ -155,7 +155,7 @@ const IssueDetail = ({ issue, onUpdated, onIssueSelect }: IssueDetailProps) => {
                     <Sparkles className="h-3.5 w-3.5 text-primary" />
                     <span className="text-xs font-semibold text-primary uppercase tracking-wide">AI + Web Intelligence</span>
                   </div>
-                  {issue.status !== 'Validated' && (
+                  {issue.status !== 'Resolved' && (
                     <div className="flex items-center gap-1">
                       <span className="text-xs text-muted-foreground mr-1">Promote to fix?</span>
                       <Button
