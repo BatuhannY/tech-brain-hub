@@ -212,6 +212,9 @@ const IssueDetail = ({ issue, onUpdated, onIssueSelect }: IssueDetailProps) => {
             </Card>
           )}
 
+          {/* Draft Team Update for validated issues */}
+          <DraftTeamUpdate issue={issue} />
+
           {/* Knowledge Base Toggle */}
           <div className="flex items-center justify-between rounded-lg border border-border bg-accent/30 px-3 py-2">
             <div className="flex items-center gap-2">
