@@ -11,7 +11,7 @@ import IssueFormDialog from '@/components/IssueFormDialog';
 import IssueDetail from '@/components/IssueDetail';
 import TrendingIssues from '@/components/TrendingIssues';
 import AIChat from '@/components/AIChat';
-import PlaybookProposals from '@/components/PlaybookProposals';
+import { formatIssueForExport } from '@/lib/playbook-export';
 import AISearchBar from '@/components/AISearchBar';
 import KnowledgeHealth from '@/components/KnowledgeHealth';
 import GlobalInsights from '@/components/GlobalInsights';
