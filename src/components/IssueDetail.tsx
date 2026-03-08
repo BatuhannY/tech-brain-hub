@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { CheckCircle2, XCircle, Bot, Globe, Wrench, BookOpen, Sparkles, Pencil, Save, X } from 'lucide-react';
 import RelatedIntelligence from '@/components/RelatedIntelligence';
 import RichTextEditor from '@/components/RichTextEditor';
+import DraftTeamUpdate from '@/components/DraftTeamUpdate';
 
 interface IssueDetailProps {
   issue: any;
