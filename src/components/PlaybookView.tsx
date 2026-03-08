@@ -188,96 +188,103 @@ const PlaybookView = () => {
   }
 
   return (
-    <div className="space-y-5">
-      {/* Known Issues Status Banner */}
-      <KnownIssuesBanner />
+    <div className="flex gap-5">
+      {/* Main playbook content */}
+      <div className="flex-1 min-w-0 space-y-5">
+        {/* Dynamic FAQ */}
+        <DynamicFAQ issues={playbookIssues} />
 
-      {/* Dynamic FAQ */}
-      <DynamicFAQ issues={playbookIssues} />
-
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Search playbook entries…" className="pl-10 text-sm" />
-      </div>
-
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
-        </p>
-        <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={refineAll} disabled={bulkRefining}>
-          {bulkRefining ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-          AI Refine All
-        </Button>
-      </div>
-
-      <div className="space-y-4">
-        {filtered.map((issue) => {
-          const refined = refinedMap[issue.id];
-          const isRefining = refiningIds.has(issue.id);
-          const steps = refined ? refined.steps : parseSteps(issue.internal_fix);
-          const summary = refined?.summary || issue.description || 'No description available.';
-          const prevention = refined?.prevention;
-
-          return (
-            <Card key={issue.id} className="shadow-none hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-2">
-                  <CardTitle className="text-base font-semibold leading-snug">{issue.title}</CardTitle>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <CategoryBadge category={issue.category} />
-                    {!refined && (
-                      <Button variant="ghost" size="sm" className="gap-1 text-xs h-7 px-2" onClick={() => refineWithAI(issue)} disabled={isRefining}>
-                        {isRefining ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                        Refine
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-0">
-                <div>
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <Lightbulb className="h-3.5 w-3.5 text-primary" />
-                    <span className="text-xs font-semibold text-primary uppercase tracking-wide">Issue Summary</span>
-                  </div>
-                  <p className="text-sm text-foreground leading-relaxed">{summary}</p>
-                </div>
-
-                <div>
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-status-resolved" />
-                    <span className="text-xs font-semibold text-status-resolved uppercase tracking-wide">Step-by-Step Fix</span>
-                  </div>
-                  <ol className="space-y-1.5">
-                    {steps.map((step, i) => (
-                      <li key={i} className="text-sm text-foreground flex items-start gap-2.5">
-                        <span className="text-xs font-mono font-bold text-muted-foreground mt-0.5 shrink-0 w-5 text-right">{i + 1}.</span>
-                        <span className="leading-relaxed">{step}</span>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-
-                {prevention && (
-                  <div className="rounded-lg bg-accent/50 border border-border p-3">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <Shield className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Prevention Tip</span>
-                    </div>
-                    <p className="text-sm text-foreground leading-relaxed">{prevention}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {filtered.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-sm text-muted-foreground">No entries match your search.</p>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Search playbook entries…" className="pl-10 text-sm" />
         </div>
-      )}
+
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
+          </p>
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={refineAll} disabled={bulkRefining}>
+            {bulkRefining ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+            AI Refine All
+          </Button>
+        </div>
+
+        <div className="space-y-4">
+          {filtered.map((issue) => {
+            const refined = refinedMap[issue.id];
+            const isRefining = refiningIds.has(issue.id);
+            const steps = refined ? refined.steps : parseSteps(issue.internal_fix);
+            const summary = refined?.summary || issue.description || 'No description available.';
+            const prevention = refined?.prevention;
+
+            return (
+              <Card key={issue.id} className="shadow-none hover:shadow-md transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <CardTitle className="text-base font-semibold leading-snug">{issue.title}</CardTitle>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <CategoryBadge category={issue.category} />
+                      {!refined && (
+                        <Button variant="ghost" size="sm" className="gap-1 text-xs h-7 px-2" onClick={() => refineWithAI(issue)} disabled={isRefining}>
+                          {isRefining ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                          Refine
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4 pt-0">
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <Lightbulb className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-xs font-semibold text-primary uppercase tracking-wide">Issue Summary</span>
+                    </div>
+                    <p className="text-sm text-foreground leading-relaxed">{summary}</p>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-status-resolved" />
+                      <span className="text-xs font-semibold text-status-resolved uppercase tracking-wide">Step-by-Step Fix</span>
+                    </div>
+                    <ol className="space-y-1.5">
+                      {steps.map((step, i) => (
+                        <li key={i} className="text-sm text-foreground flex items-start gap-2.5">
+                          <span className="text-xs font-mono font-bold text-muted-foreground mt-0.5 shrink-0 w-5 text-right">{i + 1}.</span>
+                          <span className="leading-relaxed">{step}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+
+                  {prevention && (
+                    <div className="rounded-lg bg-accent/50 border border-border p-3">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <Shield className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Prevention Tip</span>
+                      </div>
+                      <p className="text-sm text-foreground leading-relaxed">{prevention}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {filtered.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-sm text-muted-foreground">No entries match your search.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Known Issues sidebar card */}
+      <div className="w-72 shrink-0 hidden lg:block">
+        <div className="sticky top-4">
+          <KnownIssuesBanner />
+        </div>
+      </div>
     </div>
   );
 };
