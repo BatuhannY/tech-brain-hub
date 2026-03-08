@@ -66,6 +66,13 @@ const IssueDetail = ({ issue, onUpdated }: IssueDetailProps) => {
         <p className="text-sm text-muted-foreground">{issue.description}</p>
       )}
 
+      {/* Related Intelligence */}
+      <RelatedIntelligence
+        issueId={issue.id}
+        issueTitle={issue.title}
+        issueDescription={issue.description}
+      />
+
       {/* Knowledge Base Toggle */}
       <div className="flex items-center justify-between rounded-lg border border-border bg-accent/30 px-3 py-2">
         <div className="flex items-center gap-2">
