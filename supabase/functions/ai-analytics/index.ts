@@ -191,6 +191,92 @@ Extract the title, description, and any proposed fix steps mentioned.`;
       return jsonResponse(response, corsHeaders);
     }
 
+    if (mode === "generate-playbook") {
+      systemPrompt = `You are a professional IT documentation writer. Transform raw technical fixes into clean, user-friendly playbook entries. 
+Use professional but simplified language suitable for non-technical users. Each entry must have:
+1. A clear issue summary (1-2 sentences)
+2. Step-by-step fix instructions (3-7 clear steps)
+3. A prevention tip (1 sentence)`;
+
+      userPrompt = `Transform these ${issues.length} validated issue fixes into clean playbook entries:
+
+${issues.map((i: any) => `---
+ID: ${i.id}
+Title: ${i.title}
+Category: ${i.category}
+Description: ${i.description || 'N/A'}
+Internal Fix: ${i.internal_fix}
+---`).join('\n')}
+
+Generate a structured playbook entry for each issue.`;
+
+      const response = await callAI(LOVABLE_API_KEY, systemPrompt, userPrompt, [
+        {
+          type: "function",
+          function: {
+            name: "generate_playbook_entries",
+            description: "Generate structured playbook entries from validated fixes.",
+            parameters: {
+              type: "object",
+              properties: {
+                entries: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      id: { type: "string", description: "The original issue ID" },
+                      title: { type: "string", description: "Clean, user-friendly title" },
+                      category: { type: "string" },
+                      summary: { type: "string", description: "1-2 sentence issue summary for non-tech users" },
+                      steps: { type: "array", items: { type: "string" }, description: "3-7 clear step-by-step fix instructions" },
+                      prevention: { type: "string", description: "1 sentence prevention tip" }
+                    },
+                    required: ["id", "title", "category", "summary", "steps", "prevention"],
+                    additionalProperties: false
+                  }
+                }
+              },
+              required: ["entries"],
+              additionalProperties: false
+            }
+          }
+        }
+      ], { type: "function", function: { name: "generate_playbook_entries" } });
+
+      return jsonResponse(response, corsHeaders);
+    }
+
+    if (mode === "status-report") {
+      systemPrompt = `You are a concise IT status reporter. Generate a single, punchy sentence summarizing the current system health based on issue data. Include specific metrics when available. Be direct and actionable.`;
+      userPrompt = `Based on these ${issues.length} recent issues, generate a one-sentence status report:
+
+Categories: ${JSON.stringify([...new Set(issues.map((i: any) => i.category))])}
+Status breakdown: ${JSON.stringify(issues.reduce((acc: any, i: any) => { acc[i.status] = (acc[i.status] || 0) + 1; return acc; }, {}))}
+Recent issues: ${issues.slice(0, 10).map((i: any) => `[${i.category}] ${i.title}`).join(', ')}
+
+Generate a single professional status sentence.`;
+
+      const response = await callAI(LOVABLE_API_KEY, systemPrompt, userPrompt, [
+        {
+          type: "function",
+          function: {
+            name: "report_status",
+            description: "Generate a one-sentence system status report.",
+            parameters: {
+              type: "object",
+              properties: {
+                report: { type: "string", description: "A single sentence status report" }
+              },
+              required: ["report"],
+              additionalProperties: false
+            }
+          }
+        }
+      ], { type: "function", function: { name: "report_status" } });
+
+      return jsonResponse(response, corsHeaders);
+    }
+
     return new Response(JSON.stringify({ error: "Unknown mode" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
