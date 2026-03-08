@@ -15,7 +15,7 @@ interface IssueDetailProps {
   onIssueSelect?: (issueId: string) => void;
 }
 
-const IssueDetail = ({ issue, onUpdated }: IssueDetailProps) => {
+const IssueDetail = ({ issue, onUpdated, onIssueSelect }: IssueDetailProps) => {
   const [validating, setValidating] = useState(false);
   const [toggling, setToggling] = useState(false);
 
