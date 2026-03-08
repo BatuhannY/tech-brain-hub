@@ -34,9 +34,9 @@ serve(async (req) => {
 
     const allIssues = existingIssues || [];
 
-    // Separate resolved/validated from unresolved
-    const resolved = allIssues.filter(i => i.status === "Validated" || i.status === "Resolved");
-    const unresolved = allIssues.filter(i => i.status !== "Validated" && i.status !== "Resolved");
+    // Separate resolved from unresolved
+    const resolved = allIssues.filter(i => i.status === "Resolved");
+    const unresolved = allIssues.filter(i => i.status !== "Resolved");
 
     const resolvedContext = resolved.length > 0
       ? resolved.map(i => {
