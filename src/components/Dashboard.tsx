@@ -156,7 +156,7 @@ const Dashboard = () => {
       ) : (
         <Card className="shadow-none overflow-hidden divide-y divide-border">
           {displayIssues.map(issue => (
-            <div key={issue.id}>
+            <div key={issue.id} id={`issue-${issue.id}`}>
               <div
                 className="flex items-center gap-3 p-4 cursor-pointer hover:bg-accent/50 transition-colors"
                 onClick={() => setExpandedId(expandedId === issue.id ? null : issue.id)}
@@ -210,7 +210,12 @@ const Dashboard = () => {
                 <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${expandedId === issue.id ? 'rotate-90' : ''}`} />
               </div>
               {expandedId === issue.id && (
-                <IssueDetail issue={issue} onUpdated={refetch} onIssueSelect={(id) => setExpandedId(id)} />
+                <IssueDetail issue={issue} onUpdated={refetch} onIssueSelect={(id) => {
+                  setExpandedId(id);
+                  setTimeout(() => {
+                    document.getElementById(`issue-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }, 100);
+                }} />
               )}
             </div>
           ))}
