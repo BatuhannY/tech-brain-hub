@@ -35,7 +35,7 @@ const PlaybookCardSkeleton = () => (
   </Card>
 );
 
-const PlaybookView = () => {
+const PlaybookView = ({ isAdmin = false }: { isAdmin?: boolean }) => {
   const [filter, setFilter] = useState('');
   const [refinedMap, setRefinedMap] = useState<Record<string, RefinedEntry>>({});
   const [refiningIds, setRefiningIds] = useState<Set<string>>(new Set());
