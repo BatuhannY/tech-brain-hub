@@ -62,10 +62,24 @@ const Dashboard = () => {
     setDeleteId(null);
   };
 
-  const displayIssues = searchResults ?? issues ?? [];
+  const baseIssues = searchResults ?? issues ?? [];
+  const displayIssues = kbFilter ? baseIssues.filter(i => i.kb_proposed) : baseIssues;
   const totalCount = issues?.length ?? 0;
   const validatedCount = issues?.filter(i => i.status === 'Validated').length ?? 0;
   const unresolvedCount = issues?.filter(i => i.status === 'Unresolved').length ?? 0;
+
+  const copyIssueAsMarkdown = (issue: any) => {
+    navigator.clipboard.writeText(formatIssueForExport(issue));
+    toast.success('Copied as Markdown');
+  };
+
+  const copyAllKbIssues = () => {
+    const kbIssues = (issues ?? []).filter(i => i.kb_proposed);
+    if (!kbIssues.length) return;
+    const all = kbIssues.map(formatIssueForExport).join('\n\n---\n\n');
+    navigator.clipboard.writeText(all);
+    toast.success(`${kbIssues.length} KB entries copied`);
+  };
 
   const IssuesList = () => (
     <>
