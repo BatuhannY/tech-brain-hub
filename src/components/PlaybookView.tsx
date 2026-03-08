@@ -229,10 +229,12 @@ const PlaybookView = ({ isAdmin = false }: { isAdmin?: boolean }) => {
           <p className="text-sm text-muted-foreground">
             {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
           </p>
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs rounded-full" onClick={refineAll} disabled={bulkRefining}>
-            {bulkRefining ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            AI Refine All
-          </Button>
+          {isAdmin && (
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs rounded-full" onClick={refineAll} disabled={bulkRefining}>
+              {bulkRefining ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              AI Refine All
+            </Button>
+          )}
         </div>
 
         <div className="space-y-4">
