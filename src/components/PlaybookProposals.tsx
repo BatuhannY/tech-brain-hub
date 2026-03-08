@@ -12,10 +12,10 @@ const PlaybookProposals = () => {
   const { data: proposals, isLoading } = useQuery({
     queryKey: ['kb_proposals'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase
         .from('issue_logs')
-        .select('*')
-        .eq('kb_proposed' as any, true)
+        .select('*') as any)
+        .eq('kb_proposed', true)
         .order('updated_at', { ascending: false });
       if (error) throw error;
       return data as any[];
