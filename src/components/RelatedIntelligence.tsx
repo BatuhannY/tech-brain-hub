@@ -17,6 +17,7 @@ interface RelatedIntelligenceProps {
   issueId: string;
   issueTitle: string;
   issueDescription: string | null;
+  onIssueSelect?: (issueId: string) => void;
 }
 
 const relevanceColor: Record<string, string> = {
