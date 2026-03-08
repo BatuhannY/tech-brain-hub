@@ -11,6 +11,7 @@ import IssueFormDialog from '@/components/IssueFormDialog';
 import IssueDetail from '@/components/IssueDetail';
 import TrendingIssues from '@/components/TrendingIssues';
 import AIChat from '@/components/AIChat';
+import PlaybookProposals from '@/components/PlaybookProposals';
 import AISearchBar from '@/components/AISearchBar';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -185,6 +186,7 @@ const Dashboard = () => {
           <TabsList className="w-full">
             <TabsTrigger value="issues" className="flex-1">All Issues</TabsTrigger>
             <TabsTrigger value="trending" className="flex-1">Trending</TabsTrigger>
+            <TabsTrigger value="playbook" className="flex-1">Playbook</TabsTrigger>
             <TabsTrigger value="ai" className="flex-1">AI Agent</TabsTrigger>
           </TabsList>
           <div className={activeTab === 'issues' ? 'space-y-5' : 'hidden'}>
@@ -192,6 +194,9 @@ const Dashboard = () => {
           </div>
           <div className={activeTab === 'trending' ? '' : 'hidden'}>
             <TrendingIssues />
+          </div>
+          <div className={activeTab === 'playbook' ? '' : 'hidden'}>
+            <PlaybookProposals />
           </div>
           <div className={activeTab === 'ai' ? '' : 'hidden'}>
             <AIChat onIssueCreated={refetch} />
