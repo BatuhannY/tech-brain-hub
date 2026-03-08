@@ -1,4 +1,4 @@
-// Dashboard - merged playbook into issues tab
+// Dashboard - Admin + Playbook split
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,8 +12,11 @@ import IssueFormDialog from '@/components/IssueFormDialog';
 import IssueDetail from '@/components/IssueDetail';
 import TrendingIssues from '@/components/TrendingIssues';
 import AIChat from '@/components/AIChat';
+import PlaybookView from '@/components/PlaybookView';
+import HealthDashboard from '@/components/HealthDashboard';
+import ThemeToggle from '@/components/ThemeToggle';
 import { formatIssueForExport } from '@/lib/playbook-export';
-import AISearchBar from '@/components/AISearchBar';
+import PredictiveSearchBar from '@/components/PredictiveSearchBar';
 import KnowledgeHealth from '@/components/KnowledgeHealth';
 import { exportAsCSV, exportAsPDF } from '@/lib/export-utils';
 import {
@@ -91,9 +94,10 @@ const Dashboard = () => {
 
   const IssuesList = () => (
     <>
-      <AISearchBar
+      <PredictiveSearchBar
         onResults={(results, query) => { setSearchResults(results); setSearchQuery(query); }}
         onClear={() => { setSearchResults(null); setSearchQuery(''); }}
+        issues={issues ?? []}
       />
 
       {searchResults && (
@@ -230,6 +234,7 @@ const Dashboard = () => {
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-lg font-semibold text-foreground">Knowledge Hub</h1>
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="rounded-full gap-1.5">
@@ -264,18 +269,22 @@ const Dashboard = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
           <TabsList className="w-full">
             <TabsTrigger value="issues" className="flex-1 text-xs">Issues</TabsTrigger>
-            <TabsTrigger value="trending" className="flex-1 text-xs">Trending</TabsTrigger>
+            <TabsTrigger value="playbook" className="flex-1 text-xs">Playbook</TabsTrigger>
             <TabsTrigger value="health" className="flex-1 text-xs">Health</TabsTrigger>
+            <TabsTrigger value="trending" className="flex-1 text-xs">Trending</TabsTrigger>
             <TabsTrigger value="ai" className="flex-1 text-xs">AI Agent</TabsTrigger>
           </TabsList>
           <div className={activeTab === 'issues' ? 'space-y-5' : 'hidden'}>
             <IssuesList />
           </div>
-          <div className={activeTab === 'trending' ? '' : 'hidden'}>
-            <TrendingIssues />
+          <div className={activeTab === 'playbook' ? '' : 'hidden'}>
+            <PlaybookView />
           </div>
           <div className={activeTab === 'health' ? '' : 'hidden'}>
-            <KnowledgeHealth onCreateIssue={(title, desc) => { setEditingIssue(null); setFormOpen(true); setTimeout(() => { /* pre-fill handled via state */ }, 0); }} />
+            <HealthDashboard />
+          </div>
+          <div className={activeTab === 'trending' ? '' : 'hidden'}>
+            <TrendingIssues />
           </div>
           <div className={activeTab === 'ai' ? '' : 'hidden'}>
             <AIChat onIssueCreated={refetch} />
