@@ -15,6 +15,13 @@ import AIChat from '@/components/AIChat';
 import { formatIssueForExport } from '@/lib/playbook-export';
 import AISearchBar from '@/components/AISearchBar';
 import KnowledgeHealth from '@/components/KnowledgeHealth';
+import { exportAsCSV, exportAsPDF } from '@/lib/export-utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import GlobalInsights from '@/components/GlobalInsights';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
