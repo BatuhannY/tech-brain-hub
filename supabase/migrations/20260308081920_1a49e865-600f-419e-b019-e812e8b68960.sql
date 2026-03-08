@@ -1,0 +1,1 @@
+ALTER TABLE public.issue_logs ADD COLUMN IF NOT EXISTS kb_proposed boolean NOT NULL DEFAULT false;

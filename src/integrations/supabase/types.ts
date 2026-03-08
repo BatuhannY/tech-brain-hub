@@ -22,6 +22,7 @@ export type Database = {
           description: string | null
           id: string
           internal_fix: string | null
+          kb_proposed: boolean
           report_count: number
           solution_steps: string | null
           status: string
@@ -36,6 +37,7 @@ export type Database = {
           description?: string | null
           id?: string
           internal_fix?: string | null
+          kb_proposed?: boolean
           report_count?: number
           solution_steps?: string | null
           status?: string
@@ -50,6 +52,7 @@ export type Database = {
           description?: string | null
           id?: string
           internal_fix?: string | null
+          kb_proposed?: boolean
           report_count?: number
           solution_steps?: string | null
           status?: string
