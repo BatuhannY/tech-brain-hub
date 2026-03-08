@@ -175,6 +175,30 @@ const KnowledgeHealth = ({ onCreateIssue }: KnowledgeHealthProps = {}) => {
                           </li>
                         ))}
                       </ul>
+                      <div className="flex items-center gap-2 mt-3">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1.5 h-7 text-xs"
+                          onClick={() => {
+                            const md = `# ${guide.title}\n\n${guide.rationale}\n\n## Outline\n${guide.outline.map((s, i) => `${i + 1}. ${s}`).join('\n')}`;
+                            navigator.clipboard.writeText(md);
+                            toast.success('Outline copied as Markdown');
+                          }}
+                        >
+                          <Copy className="h-3 w-3" /> Copy Outline
+                        </Button>
+                        {onCreateIssue && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1.5 h-7 text-xs"
+                            onClick={() => onCreateIssue(guide.title, guide.outline.map((s, i) => `${i + 1}. ${s}`).join('\n'))}
+                          >
+                            <Plus className="h-3 w-3" /> Create as Issue
+                          </Button>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 ))}

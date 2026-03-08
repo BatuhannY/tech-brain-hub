@@ -101,7 +101,11 @@ const RelatedIntelligence = ({ issueId, issueTitle, issueDescription, onIssueSel
       </h4>
       <div className="space-y-2">
         {related.slice(0, 5).map((item: any, i) => (
-          <Card key={i} className="shadow-none">
+          <Card
+            key={i}
+            className="shadow-none cursor-pointer hover:bg-accent/50 transition-colors"
+            onClick={() => onIssueSelect?.(item.issue.id)}
+          >
             <CardContent className="p-3">
               <div className="flex items-start gap-2">
                 <Link2 className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />

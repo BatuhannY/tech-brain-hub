@@ -224,14 +224,34 @@ const Dashboard = () => {
       <header className="sticky top-0 z-10 bg-card/80 backdrop-blur-xl border-b border-border">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-lg font-semibold text-foreground">Knowledge Hub</h1>
-          <Button
-            onClick={() => { setEditingIssue(null); setFormOpen(true); }}
-            size="sm"
-            className="rounded-full gap-1.5"
-          >
-            <Plus className="h-4 w-4" />
-            New Issue
-          </Button>
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="rounded-full gap-1.5">
+                  <Download className="h-4 w-4" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => { if (issues?.length) exportAsCSV(issues); else toast.error('No issues to export'); }}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Export as CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { if (issues?.length) exportAsPDF(issues); else toast.error('No issues to export'); }}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Export as PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button
+              onClick={() => { setEditingIssue(null); setFormOpen(true); }}
+              size="sm"
+              className="rounded-full gap-1.5"
+            >
+              <Plus className="h-4 w-4" />
+              New Issue
+            </Button>
+          </div>
         </div>
       </header>
 

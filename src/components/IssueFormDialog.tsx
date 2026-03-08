@@ -417,6 +417,26 @@ const IssueFormDialog = ({ open, onOpenChange, issue, onSaved }: IssueFormDialog
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Duplicate confirmation */}
+      <AlertDialog open={showDuplicateConfirm} onOpenChange={setShowDuplicateConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-[hsl(var(--status-pending))]" />
+              Possible Duplicate Detected
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              A similar issue already exists: <strong className="text-foreground">"{copilotSuggestion?.match_title}"</strong>.
+              Creating this will increment the report count on the existing issue. Do you still want to create a new entry?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSave}>Create Anyway</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
