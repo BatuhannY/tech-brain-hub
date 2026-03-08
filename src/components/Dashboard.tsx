@@ -326,7 +326,7 @@ const Dashboard = () => {
             <TrendingIssues />
           </div>
           <div className={activeTab === 'ai' ? '' : 'hidden'}>
-            <AIChat onIssueCreated={refetch} />
+            <AIChat onIssueCreated={refetch} isAdmin={true} />
           </div>
         </Tabs>
       </main>
