@@ -186,6 +186,7 @@ const Dashboard = () => {
           <TabsList className="w-full">
             <TabsTrigger value="issues" className="flex-1">All Issues</TabsTrigger>
             <TabsTrigger value="trending" className="flex-1">Trending</TabsTrigger>
+            <TabsTrigger value="playbook" className="flex-1">Playbook</TabsTrigger>
             <TabsTrigger value="ai" className="flex-1">AI Agent</TabsTrigger>
           </TabsList>
           <div className={activeTab === 'issues' ? 'space-y-5' : 'hidden'}>
@@ -193,6 +194,9 @@ const Dashboard = () => {
           </div>
           <div className={activeTab === 'trending' ? '' : 'hidden'}>
             <TrendingIssues />
+          </div>
+          <div className={activeTab === 'playbook' ? '' : 'hidden'}>
+            <PlaybookProposals />
           </div>
           <div className={activeTab === 'ai' ? '' : 'hidden'}>
             <AIChat onIssueCreated={refetch} />
