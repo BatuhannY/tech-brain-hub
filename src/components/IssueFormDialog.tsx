@@ -219,7 +219,19 @@ const IssueFormDialog = ({ open, onOpenChange, issue, onSaved }: IssueFormDialog
             <DialogTitle>{issue ? 'Edit Issue' : 'Log New Issue'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-2">
-            {/* Title with copilot indicator */}
+            {/* Quick Import for new issues */}
+            {!issue && (
+              <QuickImport
+                onApply={(data) => {
+                  setTitle(data.title);
+                  setDescription(data.description);
+                  setInternalFix(data.fix);
+                  setCategory(data.category);
+                  toast.success('Fields populated from chat transcript');
+                }}
+              />
+            )}
+
             <div>
               <Label htmlFor="title">Title</Label>
               <div className="relative">
