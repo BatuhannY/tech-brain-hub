@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import RichTextEditor from '@/components/RichTextEditor';
+import QuickImport from '@/components/QuickImport';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, Sparkles, Bot, CheckCircle2, ArrowRight, Search } from 'lucide-react';
@@ -218,7 +219,19 @@ const IssueFormDialog = ({ open, onOpenChange, issue, onSaved }: IssueFormDialog
             <DialogTitle>{issue ? 'Edit Issue' : 'Log New Issue'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-2">
-            {/* Title with copilot indicator */}
+            {/* Quick Import for new issues */}
+            {!issue && (
+              <QuickImport
+                onApply={(data) => {
+                  setTitle(data.title);
+                  setDescription(data.description);
+                  setInternalFix(data.fix);
+                  setCategory(data.category);
+                  toast.success('Fields populated from chat transcript');
+                }}
+              />
+            )}
+
             <div>
               <Label htmlFor="title">Title</Label>
               <div className="relative">

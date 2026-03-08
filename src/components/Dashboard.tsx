@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Plus, Bug, Pencil, Trash2, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import StatusBadge from '@/components/StatusBadge';
 import CategoryBadge from '@/components/CategoryBadge';
 import IssueFormDialog from '@/components/IssueFormDialog';
@@ -13,6 +13,8 @@ import TrendingIssues from '@/components/TrendingIssues';
 import AIChat from '@/components/AIChat';
 import PlaybookProposals from '@/components/PlaybookProposals';
 import AISearchBar from '@/components/AISearchBar';
+import KnowledgeHealth from '@/components/KnowledgeHealth';
+import GlobalInsights from '@/components/GlobalInsights';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import {
@@ -66,7 +68,6 @@ const Dashboard = () => {
 
   const IssuesList = () => (
     <>
-      {/* AI Search */}
       <AISearchBar
         onResults={(results, query) => { setSearchResults(results); setSearchQuery(query); }}
         onClear={() => { setSearchResults(null); setSearchQuery(''); }}
@@ -83,7 +84,6 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
           { label: 'Total', value: totalCount, color: 'text-foreground' },
@@ -99,7 +99,9 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Issue List */}
+      {/* Global Insights */}
+      <GlobalInsights />
+
       {isLoading ? (
         <div className="text-center py-16 text-muted-foreground text-sm">Loading…</div>
       ) : displayIssues.length === 0 ? (
@@ -184,16 +186,20 @@ const Dashboard = () => {
       <main className="max-w-3xl mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
           <TabsList className="w-full">
-            <TabsTrigger value="issues" className="flex-1">All Issues</TabsTrigger>
-            <TabsTrigger value="trending" className="flex-1">Trending</TabsTrigger>
-            <TabsTrigger value="playbook" className="flex-1">Playbook</TabsTrigger>
-            <TabsTrigger value="ai" className="flex-1">AI Agent</TabsTrigger>
+            <TabsTrigger value="issues" className="flex-1 text-xs">Issues</TabsTrigger>
+            <TabsTrigger value="trending" className="flex-1 text-xs">Trending</TabsTrigger>
+            <TabsTrigger value="health" className="flex-1 text-xs">Health</TabsTrigger>
+            <TabsTrigger value="playbook" className="flex-1 text-xs">Playbook</TabsTrigger>
+            <TabsTrigger value="ai" className="flex-1 text-xs">AI Agent</TabsTrigger>
           </TabsList>
           <div className={activeTab === 'issues' ? 'space-y-5' : 'hidden'}>
             <IssuesList />
           </div>
           <div className={activeTab === 'trending' ? '' : 'hidden'}>
             <TrendingIssues />
+          </div>
+          <div className={activeTab === 'health' ? '' : 'hidden'}>
+            <KnowledgeHealth />
           </div>
           <div className={activeTab === 'playbook' ? '' : 'hidden'}>
             <PlaybookProposals />

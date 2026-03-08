@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { CheckCircle2, XCircle, Bot, Globe, Wrench, BookOpen } from 'lucide-react';
+import RelatedIntelligence from '@/components/RelatedIntelligence';
 
 interface IssueDetailProps {
   issue: any;
@@ -64,6 +65,13 @@ const IssueDetail = ({ issue, onUpdated }: IssueDetailProps) => {
       {issue.description && (
         <p className="text-sm text-muted-foreground">{issue.description}</p>
       )}
+
+      {/* Related Intelligence */}
+      <RelatedIntelligence
+        issueId={issue.id}
+        issueTitle={issue.title}
+        issueDescription={issue.description}
+      />
 
       {/* Knowledge Base Toggle */}
       <div className="flex items-center justify-between rounded-lg border border-border bg-accent/30 px-3 py-2">
