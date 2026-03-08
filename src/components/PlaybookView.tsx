@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Search, CheckCircle2, Shield, Lightbulb, Loader2, Sparkles, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import CategoryBadge from '@/components/CategoryBadge';
+import DynamicFAQ from '@/components/DynamicFAQ';
 
 interface RefinedEntry {
   id: string;
