@@ -9,9 +9,19 @@ import RichTextEditor from '@/components/RichTextEditor';
 import QuickImport from '@/components/QuickImport';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Sparkles, Bot, CheckCircle2, ArrowRight, Search } from 'lucide-react';
+import { Loader2, Sparkles, Bot, CheckCircle2, ArrowRight, Search, AlertTriangle } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 type IssueLog = Tables<'issue_logs'>;
 
@@ -49,6 +59,7 @@ const IssueFormDialog = ({ open, onOpenChange, issue, onSaved }: IssueFormDialog
   const [copilotSuggestion, setCopilotSuggestion] = useState<CopilotSuggestion | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [draftingFix, setDraftingFix] = useState(false);
+  const [showDuplicateConfirm, setShowDuplicateConfirm] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -115,11 +126,21 @@ const IssueFormDialog = ({ open, onOpenChange, issue, onSaved }: IssueFormDialog
     }
   };
 
-  const handleSave = async () => {
+  const handleSaveAttempt = () => {
     if (!title.trim()) {
       toast.error('Title is required');
       return;
     }
+    // If copilot found a match and this is a new issue, confirm
+    if (!issue && copilotSuggestion?.match_found) {
+      setShowDuplicateConfirm(true);
+      return;
+    }
+    handleSave();
+  };
+
+  const handleSave = async () => {
+    setShowDuplicateConfirm(false);
     setSaving(true);
     try {
       let finalFix = internalFix;
@@ -344,7 +365,7 @@ const IssueFormDialog = ({ open, onOpenChange, issue, onSaved }: IssueFormDialog
 
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button onClick={handleSave} disabled={isProcessing} className="gap-2">
+              <Button onClick={handleSaveAttempt} disabled={isProcessing} className="gap-2">
                 {draftingFix ? (
                   <><Loader2 className="h-4 w-4 animate-spin" /> AI Drafting Fix...</>
                 ) : aiProcessing ? (
@@ -396,6 +417,26 @@ const IssueFormDialog = ({ open, onOpenChange, issue, onSaved }: IssueFormDialog
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Duplicate confirmation */}
+      <AlertDialog open={showDuplicateConfirm} onOpenChange={setShowDuplicateConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-[hsl(var(--status-pending))]" />
+              Possible Duplicate Detected
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              A similar issue already exists: <strong className="text-foreground">"{copilotSuggestion?.match_title}"</strong>.
+              Creating this will increment the report count on the existing issue. Do you still want to create a new entry?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSave}>Create Anyway</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

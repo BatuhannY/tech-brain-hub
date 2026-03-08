@@ -12,9 +12,10 @@ import RelatedIntelligence from '@/components/RelatedIntelligence';
 interface IssueDetailProps {
   issue: any;
   onUpdated: () => void;
+  onIssueSelect?: (issueId: string) => void;
 }
 
-const IssueDetail = ({ issue, onUpdated }: IssueDetailProps) => {
+const IssueDetail = ({ issue, onUpdated, onIssueSelect }: IssueDetailProps) => {
   const [validating, setValidating] = useState(false);
   const [toggling, setToggling] = useState(false);
 
@@ -182,6 +183,7 @@ const IssueDetail = ({ issue, onUpdated }: IssueDetailProps) => {
                 issueId={issue.id}
                 issueTitle={issue.title}
                 issueDescription={issue.description}
+                onIssueSelect={onIssueSelect}
               />
             </CardContent>
           </Card>
@@ -196,6 +198,7 @@ const IssueDetail = ({ issue, onUpdated }: IssueDetailProps) => {
               issueId={issue.id}
               issueTitle={issue.title}
               issueDescription={issue.description}
+              onIssueSelect={onIssueSelect}
             />
           </CardContent>
         </Card>

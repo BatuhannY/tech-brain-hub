@@ -4,9 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Activity, BookOpen, AlertTriangle, TrendingUp, Zap } from 'lucide-react';
+import { Loader2, Activity, BookOpen, AlertTriangle, TrendingUp, Zap, Copy, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
+
+interface KnowledgeHealthProps {
+  onCreateIssue?: (title: string, description: string) => void;
+}
 
 interface ContentGap {
   category: string;
@@ -38,7 +42,7 @@ const severityColor: Record<string, string> = {
   low: 'bg-muted text-muted-foreground',
 };
 
-const KnowledgeHealth = () => {
+const KnowledgeHealth = ({ onCreateIssue }: KnowledgeHealthProps = {}) => {
   const [healthData, setHealthData] = useState<HealthData | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
 
@@ -171,6 +175,30 @@ const KnowledgeHealth = () => {
                           </li>
                         ))}
                       </ul>
+                      <div className="flex items-center gap-2 mt-3">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1.5 h-7 text-xs"
+                          onClick={() => {
+                            const md = `# ${guide.title}\n\n${guide.rationale}\n\n## Outline\n${guide.outline.map((s, i) => `${i + 1}. ${s}`).join('\n')}`;
+                            navigator.clipboard.writeText(md);
+                            toast.success('Outline copied as Markdown');
+                          }}
+                        >
+                          <Copy className="h-3 w-3" /> Copy Outline
+                        </Button>
+                        {onCreateIssue && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1.5 h-7 text-xs"
+                            onClick={() => onCreateIssue(guide.title, guide.outline.map((s, i) => `${i + 1}. ${s}`).join('\n'))}
+                          >
+                            <Plus className="h-3 w-3" /> Create as Issue
+                          </Button>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
