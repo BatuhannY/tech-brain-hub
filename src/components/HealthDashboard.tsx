@@ -11,6 +11,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, Legend,
 } from 'recharts';
+import DailySummary from '@/components/DailySummary';
 
 const HealthDashboard = () => {
   const [statusReport, setStatusReport] = useState<string | null>(null);
