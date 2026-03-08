@@ -134,18 +134,11 @@ const IssueDetail = ({ issue, onUpdated }: IssueDetailProps) => {
                   </div>
                 )}
 
-                {hasAiFix && hasWebFix && (
-                  <div className="border-t border-primary/10 my-2" />
-                )}
-
                 {hasWebFix && (
-                  <div>
-                    <div className="flex items-center gap-1 mb-1">
-                      <Globe className="h-3 w-3 text-primary/70" />
-                      <span className="text-[10px] font-medium text-primary/70 uppercase tracking-wider">Web Sources</span>
-                    </div>
+                  <>
+                    {hasAiFix && <div className="border-t border-primary/10 my-2" />}
                     <p className="text-sm text-foreground whitespace-pre-wrap">{issue.web_fix}</p>
-                  </div>
+                  </>
                 )}
               </CardContent>
             </Card>
