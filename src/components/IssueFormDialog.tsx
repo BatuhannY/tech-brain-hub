@@ -9,9 +9,19 @@ import RichTextEditor from '@/components/RichTextEditor';
 import QuickImport from '@/components/QuickImport';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Sparkles, Bot, CheckCircle2, ArrowRight, Search } from 'lucide-react';
+import { Loader2, Sparkles, Bot, CheckCircle2, ArrowRight, Search, AlertTriangle } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 type IssueLog = Tables<'issue_logs'>;
 
