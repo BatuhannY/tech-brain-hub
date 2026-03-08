@@ -70,7 +70,7 @@ const PlaybookView = ({ isAdmin = false }: { isAdmin?: boolean }) => {
   const [autoRefiningIds, setAutoRefiningIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!playbookIssues.length || bulkRefining) return;
+    if (!isAdmin || !playbookIssues.length || bulkRefining) return;
     const unrefined = playbookIssues.filter(i => !refinedMap[i.id] && !autoRefiningIds.has(i.id) && !refiningIds.has(i.id));
     if (!unrefined.length) return;
 
