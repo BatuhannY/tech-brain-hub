@@ -159,8 +159,8 @@ ${issues.map((i: any, idx: number) => `[${idx}] [${i.category}] ${i.title}: ${i.
     }
 
     if (mode === "parse-chat") {
-      systemPrompt = `You are a support chat parser. Extract structured issue data from messy chat transcripts.`;
-      userPrompt = `Parse this chat transcript and extract structured issue data:
+      systemPrompt = `You are a support chat parser. Extract structured issue data from messy chat transcripts. IMPORTANT: Remove all personal names, usernames, handles, and identifying information from the output. Replace any names with generic terms like "the user", "the reporter", "a team member", etc.`;
+      userPrompt = `Parse this chat transcript and extract structured issue data. Strip out ALL personal names, usernames, and identifying info — anonymize everything:
 
 ${chatTranscript}
 

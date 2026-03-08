@@ -6,8 +6,9 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { CheckCircle2, XCircle, Bot, Globe, Wrench, BookOpen, Sparkles } from 'lucide-react';
+import { CheckCircle2, XCircle, Bot, Globe, Wrench, BookOpen, Sparkles, Pencil, Save, X } from 'lucide-react';
 import RelatedIntelligence from '@/components/RelatedIntelligence';
+import RichTextEditor from '@/components/RichTextEditor';
 
 interface IssueDetailProps {
   issue: any;
@@ -18,6 +19,32 @@ interface IssueDetailProps {
 const IssueDetail = ({ issue, onUpdated, onIssueSelect }: IssueDetailProps) => {
   const [validating, setValidating] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const [editingFix, setEditingFix] = useState(false);
+  const [editFixContent, setEditFixContent] = useState('');
+  const [savingFix, setSavingFix] = useState(false);
+
+  const handleStartEditFix = () => {
+    setEditFixContent(issue.internal_fix || '');
+    setEditingFix(true);
+  };
+
+  const handleSaveFix = async () => {
+    setSavingFix(true);
+    try {
+      const { error } = await supabase
+        .from('issue_logs')
+        .update({ internal_fix: editFixContent, solution_steps: editFixContent } as any)
+        .eq('id', issue.id);
+      if (error) throw error;
+      toast.success('Internal fix updated');
+      setEditingFix(false);
+      onUpdated();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update fix');
+    } finally {
+      setSavingFix(false);
+    }
+  };
 
   const handleValidateFix = async () => {
     setValidating(true);
@@ -77,19 +104,45 @@ const IssueDetail = ({ issue, onUpdated, onIssueSelect }: IssueDetailProps) => {
           )}
 
           {/* Internal Fix — always first */}
-          {issue.internal_fix && (
+          {(issue.internal_fix || editingFix) && (
             <Card className="shadow-none border-[hsl(var(--status-resolved))]/20 bg-[hsl(var(--status-resolved))]/5">
               <CardContent className="p-3">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Wrench className="h-3.5 w-3.5 text-[hsl(var(--status-resolved))]" />
-                  <span className="text-xs font-semibold text-[hsl(var(--status-resolved))] uppercase tracking-wide">Internal Fix</span>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <Wrench className="h-3.5 w-3.5 text-[hsl(var(--status-resolved))]" />
+                    <span className="text-xs font-semibold text-[hsl(var(--status-resolved))] uppercase tracking-wide">Internal Fix</span>
+                  </div>
+                  {!editingFix ? (
+                    <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" onClick={handleStartEditFix}>
+                      <Pencil className="h-3 w-3" /> Edit
+                    </Button>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <Button size="sm" variant="ghost" className="h-7 text-xs gap-1 text-[hsl(var(--status-resolved))]" onClick={handleSaveFix} disabled={savingFix}>
+                        <Save className="h-3 w-3" /> Save
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-7 text-xs gap-1 text-destructive" onClick={() => setEditingFix(false)}>
+                        <X className="h-3 w-3" /> Cancel
+                      </Button>
+                    </div>
+                  )}
                 </div>
-                <div
-                  className="prose prose-sm max-w-none text-sm [&_p]:text-foreground [&_li]:text-foreground"
-                  dangerouslySetInnerHTML={{ __html: issue.internal_fix }}
-                />
+                {editingFix ? (
+                  <RichTextEditor content={editFixContent} onChange={setEditFixContent} placeholder="Write internal fix steps..." />
+                ) : (
+                  <div
+                    className="prose prose-sm max-w-none text-sm [&_p]:text-foreground [&_li]:text-foreground"
+                    dangerouslySetInnerHTML={{ __html: issue.internal_fix }}
+                  />
+                )}
               </CardContent>
             </Card>
+          )}
+          {/* Add fix button when no internal fix exists */}
+          {!issue.internal_fix && !editingFix && (
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={handleStartEditFix}>
+              <Wrench className="h-3 w-3" /> Add Internal Fix
+            </Button>
           )}
 
           {/* Combined AI + Web Fix */}
