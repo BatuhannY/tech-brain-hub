@@ -193,13 +193,13 @@ Extract the title, description, and any proposed fix steps mentioned.`;
     }
 
     if (mode === "generate-playbook") {
-      systemPrompt = `You are a professional IT documentation writer. Transform raw technical fixes into clean, user-friendly playbook entries. 
-Use professional but simplified language suitable for non-technical users. Each entry must have:
-1. A clear issue summary (1-2 sentences)
-2. Step-by-step fix instructions (3-7 clear steps)
-3. A prevention tip (1 sentence)`;
+      systemPrompt = `You are a professional internal IT documentation writer for a company's employee-facing knowledge hub. Transform raw technical fixes into clean, actionable playbook entries written for support agents and employees — NOT customers. 
+Use professional but clear language. Frame instructions from the agent's perspective (e.g. "Navigate to AT > User Overview" not "Contact support"). Each entry must have:
+1. A clear issue summary (1-2 sentences, describing what the employee will encounter)
+2. Step-by-step fix instructions (3-7 clear steps the agent should follow)
+3. A prevention tip (1 sentence, aimed at the team)`;
 
-      userPrompt = `Transform these ${issues.length} validated issue fixes into clean playbook entries:
+      userPrompt = `Transform these ${issues.length} validated issue fixes into clean playbook entries for support agents/employees:
 
 ${issues.map((i: any) => `---
 ID: ${i.id}
@@ -209,7 +209,7 @@ Description: ${i.description || 'N/A'}
 Internal Fix: ${i.internal_fix}
 ---`).join('\n')}
 
-Generate a structured playbook entry for each issue.`;
+Generate structured playbook entries written from the employee/agent perspective. Use actionable language like "Navigate to...", "Check if...", "Escalate to...".`;
 
       const response = await callAI(LOVABLE_API_KEY, systemPrompt, userPrompt, [
         {
