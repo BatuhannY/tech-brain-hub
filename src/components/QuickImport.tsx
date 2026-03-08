@@ -105,6 +105,22 @@ const QuickImport = ({ onApply }: QuickImportProps) => {
                 <div>
                   <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Proposed Fix</p>
                   <p className="text-sm text-foreground whitespace-pre-wrap">{parsed.proposed_fix}</p>
+                  {fixApproved ? (
+                    <div className="flex items-center gap-1.5 mt-2 text-xs text-[hsl(var(--status-resolved))] font-medium">
+                      <Check className="h-3.5 w-3.5" />
+                      Fix approved — will be saved as Internal Fix
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-2 gap-1.5 h-7 text-xs border-[hsl(var(--status-resolved))]/30 text-[hsl(var(--status-resolved))] hover:bg-[hsl(var(--status-resolved))]/10"
+                      onClick={() => { setFixApproved(true); toast.success('Fix approved — it will be added as Internal Fix on apply'); }}
+                    >
+                      <Check className="h-3 w-3" />
+                      Approve Fix
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
