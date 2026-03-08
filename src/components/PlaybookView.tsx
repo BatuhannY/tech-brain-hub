@@ -35,7 +35,7 @@ const PlaybookCardSkeleton = () => (
   </Card>
 );
 
-const PlaybookView = () => {
+const PlaybookView = ({ isAdmin = false }: { isAdmin?: boolean }) => {
   const [filter, setFilter] = useState('');
   const [refinedMap, setRefinedMap] = useState<Record<string, RefinedEntry>>({});
   const [refiningIds, setRefiningIds] = useState<Set<string>>(new Set());
@@ -229,10 +229,12 @@ const PlaybookView = () => {
           <p className="text-sm text-muted-foreground">
             {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
           </p>
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs rounded-full" onClick={refineAll} disabled={bulkRefining}>
-            {bulkRefining ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            AI Refine All
-          </Button>
+          {isAdmin && (
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs rounded-full" onClick={refineAll} disabled={bulkRefining}>
+              {bulkRefining ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              AI Refine All
+            </Button>
+          )}
         </div>
 
         <div className="space-y-4">
@@ -254,7 +256,7 @@ const PlaybookView = () => {
                     <CardTitle className="text-[15px] font-semibold leading-snug">{issue.title}</CardTitle>
                     <div className="flex items-center gap-2 shrink-0">
                       <CategoryBadge category={issue.category} />
-                      {!refined && (
+                      {isAdmin && !refined && (
                         <Button variant="ghost" size="sm" className="gap-1 text-xs h-7 px-2 rounded-full" onClick={() => refineWithAI(issue)} disabled={isRefining}>
                           {isRefining ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
                           Refine

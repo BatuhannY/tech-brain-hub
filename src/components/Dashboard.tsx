@@ -317,7 +317,7 @@ const Dashboard = () => {
             <IssuesList />
           </div>
           <div className={activeTab === 'playbook' ? '' : 'hidden'}>
-            <PlaybookView />
+            <PlaybookView isAdmin />
           </div>
           <div className={activeTab === 'health' ? '' : 'hidden'}>
             <HealthDashboard />
