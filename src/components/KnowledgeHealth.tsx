@@ -4,9 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Activity, BookOpen, AlertTriangle, TrendingUp, Zap } from 'lucide-react';
+import { Loader2, Activity, BookOpen, AlertTriangle, TrendingUp, Zap, Copy, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
+
+interface KnowledgeHealthProps {
+  onCreateIssue?: (title: string, description: string) => void;
+}
 
 interface ContentGap {
   category: string;
