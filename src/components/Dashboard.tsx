@@ -240,6 +240,15 @@ const Dashboard = () => {
           <h1 className="text-lg font-semibold text-foreground">Knowledge Hub</h1>
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-muted-foreground"
+              onClick={async () => { await signOut(); navigate('/admin'); }}
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="rounded-full gap-1.5">
