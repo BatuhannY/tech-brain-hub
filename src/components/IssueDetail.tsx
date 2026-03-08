@@ -104,19 +104,45 @@ const IssueDetail = ({ issue, onUpdated, onIssueSelect }: IssueDetailProps) => {
           )}
 
           {/* Internal Fix — always first */}
-          {issue.internal_fix && (
+          {(issue.internal_fix || editingFix) && (
             <Card className="shadow-none border-[hsl(var(--status-resolved))]/20 bg-[hsl(var(--status-resolved))]/5">
               <CardContent className="p-3">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Wrench className="h-3.5 w-3.5 text-[hsl(var(--status-resolved))]" />
-                  <span className="text-xs font-semibold text-[hsl(var(--status-resolved))] uppercase tracking-wide">Internal Fix</span>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <Wrench className="h-3.5 w-3.5 text-[hsl(var(--status-resolved))]" />
+                    <span className="text-xs font-semibold text-[hsl(var(--status-resolved))] uppercase tracking-wide">Internal Fix</span>
+                  </div>
+                  {!editingFix ? (
+                    <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" onClick={handleStartEditFix}>
+                      <Pencil className="h-3 w-3" /> Edit
+                    </Button>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <Button size="sm" variant="ghost" className="h-7 text-xs gap-1 text-[hsl(var(--status-resolved))]" onClick={handleSaveFix} disabled={savingFix}>
+                        <Save className="h-3 w-3" /> Save
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-7 text-xs gap-1 text-destructive" onClick={() => setEditingFix(false)}>
+                        <X className="h-3 w-3" /> Cancel
+                      </Button>
+                    </div>
+                  )}
                 </div>
-                <div
-                  className="prose prose-sm max-w-none text-sm [&_p]:text-foreground [&_li]:text-foreground"
-                  dangerouslySetInnerHTML={{ __html: issue.internal_fix }}
-                />
+                {editingFix ? (
+                  <RichTextEditor content={editFixContent} onChange={setEditFixContent} placeholder="Write internal fix steps..." />
+                ) : (
+                  <div
+                    className="prose prose-sm max-w-none text-sm [&_p]:text-foreground [&_li]:text-foreground"
+                    dangerouslySetInnerHTML={{ __html: issue.internal_fix }}
+                  />
+                )}
               </CardContent>
             </Card>
+          )}
+          {/* Add fix button when no internal fix exists */}
+          {!issue.internal_fix && !editingFix && (
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={handleStartEditFix}>
+              <Wrench className="h-3 w-3" /> Add Internal Fix
+            </Button>
           )}
 
           {/* Combined AI + Web Fix */}
