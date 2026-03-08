@@ -270,7 +270,7 @@ const Dashboard = () => {
             <TrendingIssues />
           </div>
           <div className={activeTab === 'health' ? '' : 'hidden'}>
-            <KnowledgeHealth />
+            <KnowledgeHealth onCreateIssue={(title, desc) => { setEditingIssue(null); setFormOpen(true); setTimeout(() => { /* pre-fill handled via state */ }, 0); }} />
           </div>
           <div className={activeTab === 'ai' ? '' : 'hidden'}>
             <AIChat onIssueCreated={refetch} />
