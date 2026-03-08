@@ -50,11 +50,12 @@ const QuickImport = ({ onApply }: QuickImportProps) => {
     onApply({
       title: parsed.title,
       description: parsed.description,
-      fix: parsed.proposed_fix,
+      fix: fixApproved ? parsed.proposed_fix : '',
       category: parsed.suggested_category,
     });
     setTranscript('');
     setParsed(null);
+    setFixApproved(false);
   };
 
   return (
