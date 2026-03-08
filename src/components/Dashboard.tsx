@@ -156,7 +156,7 @@ const Dashboard = () => {
       ) : (
         <Card className="shadow-none overflow-hidden divide-y divide-border">
           {displayIssues.map(issue => (
-            <div key={issue.id}>
+            <div key={issue.id} id={`issue-${issue.id}`}>
               <div
                 className="flex items-center gap-3 p-4 cursor-pointer hover:bg-accent/50 transition-colors"
                 onClick={() => setExpandedId(expandedId === issue.id ? null : issue.id)}
