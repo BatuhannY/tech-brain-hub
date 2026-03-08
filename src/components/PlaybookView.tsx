@@ -94,11 +94,25 @@ const PlaybookView = () => {
     })();
   }, [playbookIssues]);
 
+  const stripHtml = (html: string): string => {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    return doc.body.textContent || '';
+  };
+
   const parseSteps = (fix: string | null): string[] => {
     if (!fix) return ['No fix details available.'];
-    // Try to split by numbered steps, newlines, or bullet points
-    const lines = fix.split(/\n|(?=\d+\.\s)/).map(l => l.replace(/^[\d]+\.\s*/, '').replace(/^[-•]\s*/, '').trim()).filter(Boolean);
-    return lines.length > 0 ? lines : [fix];
+    // If HTML contains list items, extract each <li> as a step
+    if (fix.includes('<li>')) {
+      const doc = new DOMParser().parseFromString(fix, 'text/html');
+      const items = doc.querySelectorAll('li');
+      if (items.length > 0) {
+        return Array.from(items).map(li => (li.textContent || '').trim()).filter(Boolean);
+      }
+    }
+    // Fallback: strip HTML, then split by numbered steps, newlines, or bullet points
+    const clean = stripHtml(fix);
+    const lines = clean.split(/\n|(?=\d+\.\s)/).map(l => l.replace(/^[\d]+\.\s*/, '').replace(/^[-•]\s*/, '').trim()).filter(Boolean);
+    return lines.length > 0 ? lines : [clean];
   };
 
   const refineWithAI = async (issue: any) => {
