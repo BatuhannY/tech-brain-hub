@@ -6,8 +6,9 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { CheckCircle2, XCircle, Bot, Globe, Wrench, BookOpen, Sparkles } from 'lucide-react';
+import { CheckCircle2, XCircle, Bot, Globe, Wrench, BookOpen, Sparkles, Pencil, Save, X } from 'lucide-react';
 import RelatedIntelligence from '@/components/RelatedIntelligence';
+import RichTextEditor from '@/components/RichTextEditor';
 
 interface IssueDetailProps {
   issue: any;
