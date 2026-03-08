@@ -19,6 +19,32 @@ interface IssueDetailProps {
 const IssueDetail = ({ issue, onUpdated, onIssueSelect }: IssueDetailProps) => {
   const [validating, setValidating] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const [editingFix, setEditingFix] = useState(false);
+  const [editFixContent, setEditFixContent] = useState('');
+  const [savingFix, setSavingFix] = useState(false);
+
+  const handleStartEditFix = () => {
+    setEditFixContent(issue.internal_fix || '');
+    setEditingFix(true);
+  };
+
+  const handleSaveFix = async () => {
+    setSavingFix(true);
+    try {
+      const { error } = await supabase
+        .from('issue_logs')
+        .update({ internal_fix: editFixContent, solution_steps: editFixContent } as any)
+        .eq('id', issue.id);
+      if (error) throw error;
+      toast.success('Internal fix updated');
+      setEditingFix(false);
+      onUpdated();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update fix');
+    } finally {
+      setSavingFix(false);
+    }
+  };
 
   const handleValidateFix = async () => {
     setValidating(true);
