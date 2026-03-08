@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, HelpCircle } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { HelpCircle } from 'lucide-react';
 
 interface FAQEntry {
   question: string;
@@ -32,18 +33,10 @@ const DynamicFAQ = ({ issues }: { issues: any[] }) => {
           },
         });
         console.log('FAQ response:', JSON.stringify(response.data));
-        if (response.error) {
-          console.error('FAQ invoke error:', response.error);
-          return;
-        }
+        if (response.error) { console.error('FAQ invoke error:', response.error); return; }
         const result = response.data;
-        if (result?.error) {
-          console.error('FAQ AI error:', result.error);
-          return;
-        }
-        if (result?.faqs) {
-          setFaqs(result.faqs);
-        }
+        if (result?.error) { console.error('FAQ AI error:', result.error); return; }
+        if (result?.faqs) setFaqs(result.faqs);
       } catch (err) {
         console.error('FAQ generation failed:', err);
       } finally {
@@ -56,9 +49,19 @@ const DynamicFAQ = ({ issues }: { issues: any[] }) => {
 
   if (loading) {
     return (
-      <Card className="shadow-none border-primary/15 bg-gradient-to-br from-primary/5 to-transparent mb-5">
-        <CardContent className="flex items-center justify-center gap-2 py-8 text-muted-foreground text-sm">
-          <Loader2 className="h-4 w-4 animate-spin" /> Generating FAQs…
+      <Card className="shadow-none border-primary/15 bg-gradient-to-br from-primary/5 to-transparent rounded-xl mb-5">
+        <CardHeader className="pb-2">
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center">
+              <HelpCircle className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <CardTitle className="text-sm font-semibold">Frequently Asked Questions</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3 pt-0">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-4/5" />
+          <Skeleton className="h-4 w-3/4" />
         </CardContent>
       </Card>
     );
@@ -67,17 +70,19 @@ const DynamicFAQ = ({ issues }: { issues: any[] }) => {
   if (!faqs.length) return null;
 
   return (
-    <Card className="shadow-none border-primary/15 bg-gradient-to-br from-primary/5 to-transparent mb-5">
+    <Card className="shadow-none border-primary/15 bg-gradient-to-br from-primary/5 to-transparent rounded-xl mb-5">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
-          <HelpCircle className="h-4 w-4 text-primary" />
+          <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center">
+            <HelpCircle className="h-3.5 w-3.5 text-primary" />
+          </div>
           <CardTitle className="text-sm font-semibold">Frequently Asked Questions</CardTitle>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
         <Accordion type="single" collapsible className="w-full">
           {faqs.map((faq, i) => (
-            <AccordionItem key={i} value={`faq-${i}`} className="border-border/50">
+            <AccordionItem key={i} value={`faq-${i}`} className="border-border/40">
               <AccordionTrigger className="text-sm text-left hover:no-underline py-3 gap-2">
                 <span className="text-foreground font-medium">{faq.question}</span>
               </AccordionTrigger>

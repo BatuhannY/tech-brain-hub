@@ -42,13 +42,15 @@ const KnownIssuesBanner = () => {
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <Card className="border-amber-500/30 bg-amber-500/5 shadow-none">
+      <Card className="border-[hsl(var(--status-pending)/0.3)] bg-[hsl(var(--status-pending)/0.04)] shadow-none shadow-[0_0_20px_-6px_hsl(var(--status-pending)/0.15)] rounded-xl">
         <CollapsibleTrigger asChild>
-          <button className="w-full flex items-center justify-between p-4 text-left hover:bg-amber-500/5 rounded-t-lg transition-colors">
+          <button className="w-full flex items-center justify-between p-4 text-left hover:bg-[hsl(var(--status-pending)/0.05)] rounded-t-xl transition-colors">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              <div className="h-6 w-6 rounded-lg bg-[hsl(var(--status-pending)/0.12)] flex items-center justify-center">
+                <AlertTriangle className="h-3.5 w-3.5 text-[hsl(var(--status-pending))]" />
+              </div>
               <span className="text-sm font-semibold text-foreground">
-                {issues.length} Active Known {issues.length === 1 ? 'Issue' : 'Issues'}
+                {issues.length} Active {issues.length === 1 ? 'Issue' : 'Issues'}
               </span>
             </div>
             {open ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
@@ -62,10 +64,10 @@ const KnownIssuesBanner = () => {
                   <CategoryBadge category={category} />
                   <span className="text-xs text-muted-foreground">({items.length})</span>
                 </div>
-                <ul className="space-y-1 pl-1">
+                <ul className="space-y-1.5 pl-1">
                   {items.map(issue => (
                     <li key={issue.id} className="flex items-start gap-2 text-sm text-foreground">
-                      <span className="text-muted-foreground mt-0.5">•</span>
+                      <span className="text-muted-foreground mt-0.5 text-xs">•</span>
                       <span className="leading-relaxed">
                         {issue.title}
                         {issue.report_count > 1 && (
