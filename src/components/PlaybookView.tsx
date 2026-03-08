@@ -4,9 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Search, CheckCircle2, Shield, Lightbulb, Loader2, Sparkles, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
-import CategoryBadge from '@/components/CategoryBadge';
+import CategoryBadge, { getCategoryBorderClass } from '@/components/CategoryBadge';
 import DynamicFAQ from '@/components/DynamicFAQ';
 import KnownIssuesBanner from '@/components/KnownIssuesBanner';
 
@@ -17,6 +18,23 @@ interface RefinedEntry {
   prevention: string;
 }
 
+const PlaybookCardSkeleton = () => (
+  <Card className="shadow-none border-l-4 border-l-muted">
+    <CardHeader className="pb-3">
+      <Skeleton className="h-5 w-3/4" />
+    </CardHeader>
+    <CardContent className="space-y-3 pt-0">
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-5/6" />
+      <div className="space-y-2 pt-2">
+        <Skeleton className="h-3.5 w-full" />
+        <Skeleton className="h-3.5 w-4/5" />
+        <Skeleton className="h-3.5 w-3/4" />
+      </div>
+    </CardContent>
+  </Card>
+);
+
 const PlaybookView = () => {
   const [filter, setFilter] = useState('');
   const [refinedMap, setRefinedMap] = useState<Record<string, RefinedEntry>>({});
@@ -24,22 +42,14 @@ const PlaybookView = () => {
   const [bulkRefining, setBulkRefining] = useState(false);
   const queryClient = useQueryClient();
 
-  // Realtime subscription to auto-refresh when issues change
   useEffect(() => {
     const channel = supabase
       .channel('playbook-issue-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'issue_logs' },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['playbook_issues'] });
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'issue_logs' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['playbook_issues'] });
+      })
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [queryClient]);
 
   const { data: issues, isLoading } = useQuery({
@@ -57,7 +67,6 @@ const PlaybookView = () => {
 
   const playbookIssues = issues ?? [];
 
-  // Auto-refine new entries whenever issues change
   const [autoRefiningIds, setAutoRefiningIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -102,15 +111,11 @@ const PlaybookView = () => {
 
   const parseSteps = (fix: string | null): string[] => {
     if (!fix) return ['No fix details available.'];
-    // If HTML contains list items, extract each <li> as a step
     if (fix.includes('<li>')) {
       const doc = new DOMParser().parseFromString(fix, 'text/html');
       const items = doc.querySelectorAll('li');
-      if (items.length > 0) {
-        return Array.from(items).map(li => (li.textContent || '').trim()).filter(Boolean);
-      }
+      if (items.length > 0) return Array.from(items).map(li => (li.textContent || '').trim()).filter(Boolean);
     }
-    // Fallback: strip HTML, then split by numbered steps, newlines, or bullet points
     const clean = stripHtml(fix);
     const lines = clean.split(/\n|(?=\d+\.\s)/).map(l => l.replace(/^[\d]+\.\s*/, '').replace(/^[-•]\s*/, '').trim()).filter(Boolean);
     return lines.length > 0 ? lines : [clean];
@@ -168,45 +173,63 @@ const PlaybookView = () => {
   );
 
   if (isLoading) {
-    return <div className="text-center py-16 text-muted-foreground text-sm">Loading…</div>;
+    return (
+      <div className="flex gap-6">
+        <div className="flex-1 min-w-0 space-y-4">
+          <Skeleton className="h-11 w-full rounded-full" />
+          <PlaybookCardSkeleton />
+          <PlaybookCardSkeleton />
+          <PlaybookCardSkeleton />
+        </div>
+        <div className="w-72 shrink-0 hidden lg:block space-y-4">
+          <Skeleton className="h-48 w-full rounded-lg" />
+          <Skeleton className="h-32 w-full rounded-lg" />
+        </div>
+      </div>
+    );
   }
 
   if (!playbookIssues.length) {
     return (
-      <Card className="shadow-none">
-        <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
-          <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-            <BookOpen className="h-8 w-8 text-primary" />
+      <Card className="shadow-none border-dashed">
+        <CardContent className="flex flex-col items-center justify-center py-20 gap-5">
+          <div className="h-20 w-20 rounded-2xl bg-primary/8 flex items-center justify-center">
+            <BookOpen className="h-10 w-10 text-primary/60" />
           </div>
-          <p className="font-semibold text-foreground">No Playbook Entries Yet</p>
-          <p className="text-sm text-muted-foreground max-w-sm text-center">
-            Resolve or validate issues in the Issues tab — they'll automatically appear here as playbook entries.
-          </p>
+          <div className="text-center space-y-1.5">
+            <p className="font-semibold text-foreground text-lg">No Playbook Entries Yet</p>
+            <p className="text-sm text-muted-foreground max-w-sm">
+              Resolve issues in the Issues tab — they'll automatically appear here as playbook entries.
+            </p>
+          </div>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <div className="flex gap-5">
-      {/* Main playbook content */}
+    <div className="flex gap-6">
       <div className="flex-1 min-w-0 space-y-5">
-        {/* Dynamic FAQ */}
         {/* FAQ shown inline on mobile only */}
         <div className="lg:hidden">
           <DynamicFAQ issues={playbookIssues} />
         </div>
 
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Search playbook entries…" className="pl-10 text-sm" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Search playbook entries…"
+            className="pl-11 text-sm rounded-full bg-card border-border/60 h-11 shadow-sm focus-visible:shadow-md transition-shadow"
+          />
         </div>
 
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
             {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
           </p>
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={refineAll} disabled={bulkRefining}>
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs rounded-full" onClick={refineAll} disabled={bulkRefining}>
             {bulkRefining ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
             AI Refine All
           </Button>
@@ -219,16 +242,20 @@ const PlaybookView = () => {
             const steps = refined ? refined.steps : parseSteps(issue.internal_fix);
             const summary = refined?.summary || issue.description || 'No description available.';
             const prevention = refined?.prevention;
+            const borderClass = getCategoryBorderClass(issue.category);
 
             return (
-              <Card key={issue.id} className="shadow-none hover:shadow-md transition-shadow">
+              <Card
+                key={issue.id}
+                className={`shadow-none border-l-4 ${borderClass} hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 bg-gradient-to-br from-card to-card/80`}
+              >
                 <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-base font-semibold leading-snug">{issue.title}</CardTitle>
+                  <div className="flex items-start justify-between gap-3">
+                    <CardTitle className="text-[15px] font-semibold leading-snug">{issue.title}</CardTitle>
                     <div className="flex items-center gap-2 shrink-0">
                       <CategoryBadge category={issue.category} />
                       {!refined && (
-                        <Button variant="ghost" size="sm" className="gap-1 text-xs h-7 px-2" onClick={() => refineWithAI(issue)} disabled={isRefining}>
+                        <Button variant="ghost" size="sm" className="gap-1 text-xs h-7 px-2 rounded-full" onClick={() => refineWithAI(issue)} disabled={isRefining}>
                           {isRefining ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
                           Refine
                         </Button>
@@ -246,14 +273,16 @@ const PlaybookView = () => {
                   </div>
 
                   <div>
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-status-resolved" />
-                      <span className="text-xs font-semibold text-status-resolved uppercase tracking-wide">Step-by-Step Fix</span>
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-[hsl(var(--status-resolved))]" />
+                      <span className="text-xs font-semibold text-[hsl(var(--status-resolved))] uppercase tracking-wide">Step-by-Step Fix</span>
                     </div>
-                    <ol className="space-y-1.5">
+                    <ol className="space-y-2">
                       {steps.map((step, i) => (
-                        <li key={i} className="text-sm text-foreground flex items-start gap-2.5">
-                          <span className="text-xs font-mono font-bold text-muted-foreground mt-0.5 shrink-0 w-5 text-right">{i + 1}.</span>
+                        <li key={i} className="text-sm text-foreground flex items-start gap-3">
+                          <span className="flex items-center justify-center h-5 w-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold shrink-0 mt-0.5">
+                            {i + 1}
+                          </span>
                           <span className="leading-relaxed">{step}</span>
                         </li>
                       ))}
@@ -261,7 +290,7 @@ const PlaybookView = () => {
                   </div>
 
                   {prevention && (
-                    <div className="rounded-lg bg-accent/50 border border-border p-3">
+                    <div className="rounded-xl bg-accent/50 border border-border/60 p-3.5">
                       <div className="flex items-center gap-1.5 mb-1">
                         <Shield className="h-3.5 w-3.5 text-muted-foreground" />
                         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Prevention Tip</span>
@@ -276,13 +305,13 @@ const PlaybookView = () => {
         </div>
 
         {filtered.length === 0 && (
-          <div className="text-center py-12">
+          <div className="text-center py-16">
             <p className="text-sm text-muted-foreground">No entries match your search.</p>
           </div>
         )}
       </div>
 
-      {/* Right sidebar: FAQ + Known Issues */}
+      {/* Right sidebar */}
       <div className="w-72 shrink-0 hidden lg:block space-y-4">
         <DynamicFAQ issues={playbookIssues} />
         <KnownIssuesBanner />
