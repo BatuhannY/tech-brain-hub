@@ -365,7 +365,7 @@ const IssueFormDialog = ({ open, onOpenChange, issue, onSaved }: IssueFormDialog
 
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button onClick={handleSave} disabled={isProcessing} className="gap-2">
+              <Button onClick={handleSaveAttempt} disabled={isProcessing} className="gap-2">
                 {draftingFix ? (
                   <><Loader2 className="h-4 w-4 animate-spin" /> AI Drafting Fix...</>
                 ) : aiProcessing ? (
