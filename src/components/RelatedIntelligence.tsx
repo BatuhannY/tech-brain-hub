@@ -26,7 +26,7 @@ const relevanceColor: Record<string, string> = {
   low: 'bg-muted text-muted-foreground',
 };
 
-const RelatedIntelligence = ({ issueId, issueTitle, issueDescription }: RelatedIntelligenceProps) => {
+const RelatedIntelligence = ({ issueId, issueTitle, issueDescription, onIssueSelect }: RelatedIntelligenceProps) => {
   const [related, setRelated] = useState<RelatedItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetched, setFetched] = useState(false);
