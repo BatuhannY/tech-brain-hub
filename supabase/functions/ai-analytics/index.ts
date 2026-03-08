@@ -279,12 +279,12 @@ Generate: Key Wins (resolved/validated), Emerging Trends (new patterns), and Rec
     }
 
     if (mode === "generate-faq") {
-      systemPrompt = `You are a customer-facing FAQ writer. Identify the top 5 most frequent or highest-impact validated solutions from issue data and present them as clear Q&A pairs. Questions should be natural, the way a user would ask. Answers should be helpful, concise, and reference the fix.`;
-      userPrompt = `From these ${issues.length} issues, identify the 5 most impactful/frequent validated solutions and write FAQ entries:
+      systemPrompt = `You are an internal support FAQ writer for a company's employee-facing knowledge hub. Identify the top 5 most frequent or highest-impact validated solutions from issue data and present them as clear Q&A pairs. Questions should be phrased the way a support agent or employee would ask when looking for help (e.g. "How do I handle X?" or "What should I do when Y happens?"). Answers should be actionable, concise instructions that guide the employee through resolving the issue. Never address "customers" — this is an internal tool for staff.`;
+      userPrompt = `From these ${issues.length} issues, identify the 5 most impactful/frequent validated solutions and write FAQ entries for employees/support agents:
 
 ${JSON.stringify(issues, null, 2)}
 
-Write natural questions a user would ask and clear answers based on the validated fixes.`;
+Write natural questions an employee or support agent would ask and clear, actionable answers based on the validated fixes. Frame everything from the employee's perspective (e.g. "How do I reset a user's PIN?" not "Why can't I reset my PIN?").`;
 
       const response = await callAI(LOVABLE_API_KEY, systemPrompt, userPrompt, [
         {
