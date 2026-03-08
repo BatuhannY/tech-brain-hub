@@ -214,7 +214,7 @@ const IssueFormDialog = ({ open, onOpenChange, issue, onSaved }: IssueFormDialog
             internal_fix: finalFix || null,
             ai_suggested_fix: aiSuggestedFix || null,
             web_fix: webFix || null,
-            status: finalFix ? 'Validated' : 'Unresolved',
+            status: finalFix ? 'Resolved' : 'Unresolved',
           } as any);
         if (error) throw error;
         toast.success('Issue created with AI analysis');
