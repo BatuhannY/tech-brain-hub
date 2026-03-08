@@ -23,24 +23,26 @@ const QuickImport = ({ onApply }: QuickImportProps) => {
   const [transcript, setTranscript] = useState('');
   const [parsing, setParsing] = useState(false);
   const [parsed, setParsed] = useState<ParsedData | null>(null);
+  const [fixApproved, setFixApproved] = useState(false);
 
   const handleParse = async () => {
     if (!transcript.trim()) { toast.error('Paste a chat transcript first'); return; }
     setParsing(true);
-    setParsed(null);
-    try {
-      const { data, error } = await supabase.functions.invoke('ai-analytics', {
-        body: { mode: 'parse-chat', chatTranscript: transcript.trim() },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      setParsed(data);
-      toast.success('Chat transcript parsed successfully');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to parse transcript');
-    } finally {
-      setParsing(false);
-    }
+      setParsed(null);
+      setFixApproved(false);
+      try {
+        const { data, error } = await supabase.functions.invoke('ai-analytics', {
+          body: { mode: 'parse-chat', chatTranscript: transcript.trim() },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        setParsed(data);
+        toast.success('Chat transcript parsed successfully');
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to parse transcript');
+      } finally {
+        setParsing(false);
+      }
   };
 
   const handleApply = () => {
@@ -48,11 +50,12 @@ const QuickImport = ({ onApply }: QuickImportProps) => {
     onApply({
       title: parsed.title,
       description: parsed.description,
-      fix: parsed.proposed_fix,
+      fix: fixApproved ? parsed.proposed_fix : '',
       category: parsed.suggested_category,
     });
     setTranscript('');
     setParsed(null);
+    setFixApproved(false);
   };
 
   return (
@@ -102,6 +105,22 @@ const QuickImport = ({ onApply }: QuickImportProps) => {
                 <div>
                   <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Proposed Fix</p>
                   <p className="text-sm text-foreground whitespace-pre-wrap">{parsed.proposed_fix}</p>
+                  {fixApproved ? (
+                    <div className="flex items-center gap-1.5 mt-2 text-xs text-[hsl(var(--status-resolved))] font-medium">
+                      <Check className="h-3.5 w-3.5" />
+                      Fix approved — will be saved as Internal Fix
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-2 gap-1.5 h-7 text-xs border-[hsl(var(--status-resolved))]/30 text-[hsl(var(--status-resolved))] hover:bg-[hsl(var(--status-resolved))]/10"
+                      onClick={() => { setFixApproved(true); toast.success('Fix approved — it will be added as Internal Fix on apply'); }}
+                    >
+                      <Check className="h-3 w-3" />
+                      Approve Fix
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
