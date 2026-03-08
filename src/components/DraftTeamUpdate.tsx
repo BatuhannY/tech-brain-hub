@@ -14,7 +14,7 @@ const DraftTeamUpdate = ({ issue }: DraftTeamUpdateProps) => {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  if (issue.status !== 'Validated') return null;
+  if (issue.status !== 'Resolved') return null;
 
   const generate = async () => {
     setLoading(true);
