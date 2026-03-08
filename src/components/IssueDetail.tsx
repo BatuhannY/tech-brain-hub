@@ -183,6 +183,7 @@ const IssueDetail = ({ issue, onUpdated, onIssueSelect }: IssueDetailProps) => {
                 issueId={issue.id}
                 issueTitle={issue.title}
                 issueDescription={issue.description}
+                onIssueSelect={onIssueSelect}
               />
             </CardContent>
           </Card>
