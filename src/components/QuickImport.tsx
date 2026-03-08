@@ -28,20 +28,21 @@ const QuickImport = ({ onApply }: QuickImportProps) => {
   const handleParse = async () => {
     if (!transcript.trim()) { toast.error('Paste a chat transcript first'); return; }
     setParsing(true);
-    setParsed(null);
-    try {
-      const { data, error } = await supabase.functions.invoke('ai-analytics', {
-        body: { mode: 'parse-chat', chatTranscript: transcript.trim() },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      setParsed(data);
-      toast.success('Chat transcript parsed successfully');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to parse transcript');
-    } finally {
-      setParsing(false);
-    }
+      setParsed(null);
+      setFixApproved(false);
+      try {
+        const { data, error } = await supabase.functions.invoke('ai-analytics', {
+          body: { mode: 'parse-chat', chatTranscript: transcript.trim() },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        setParsed(data);
+        toast.success('Chat transcript parsed successfully');
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to parse transcript');
+      } finally {
+        setParsing(false);
+      }
   };
 
   const handleApply = () => {
