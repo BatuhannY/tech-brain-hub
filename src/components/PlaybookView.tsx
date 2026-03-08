@@ -192,7 +192,10 @@ const PlaybookView = () => {
       {/* Main playbook content */}
       <div className="flex-1 min-w-0 space-y-5">
         {/* Dynamic FAQ */}
-        <DynamicFAQ issues={playbookIssues} />
+        {/* FAQ shown inline on mobile only */}
+        <div className="lg:hidden">
+          <DynamicFAQ issues={playbookIssues} />
+        </div>
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
