@@ -282,11 +282,10 @@ const PlaybookView = () => {
         )}
       </div>
 
-      {/* Known Issues sidebar card */}
-      <div className="w-72 shrink-0 hidden lg:block">
-        <div className="sticky top-4">
-          <KnownIssuesBanner />
-        </div>
+      {/* Right sidebar: FAQ + Known Issues */}
+      <div className="w-72 shrink-0 hidden lg:block space-y-4">
+        <DynamicFAQ issues={playbookIssues} />
+        <KnownIssuesBanner />
       </div>
     </div>
   );
