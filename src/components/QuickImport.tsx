@@ -23,6 +23,7 @@ const QuickImport = ({ onApply }: QuickImportProps) => {
   const [transcript, setTranscript] = useState('');
   const [parsing, setParsing] = useState(false);
   const [parsed, setParsed] = useState<ParsedData | null>(null);
+  const [fixApproved, setFixApproved] = useState(false);
 
   const handleParse = async () => {
     if (!transcript.trim()) { toast.error('Paste a chat transcript first'); return; }
