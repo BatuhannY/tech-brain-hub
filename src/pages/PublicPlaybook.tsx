@@ -1,10 +1,16 @@
+import { useState } from 'react';
 import PlaybookView from '@/components/PlaybookView';
+import TrendingIssues from '@/components/TrendingIssues';
+import AIChat from '@/components/AIChat';
 import ThemeToggle from '@/components/ThemeToggle';
 import { Link } from 'react-router-dom';
 import { Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const PublicPlaybook = () => {
+  const [activeTab, setActiveTab] = useState('playbook');
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-10 bg-card/80 backdrop-blur-xl border-b border-border">
@@ -22,7 +28,22 @@ const PublicPlaybook = () => {
         </div>
       </header>
       <main className="max-w-3xl mx-auto px-4 py-6">
-        <PlaybookView />
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
+          <TabsList className="w-full">
+            <TabsTrigger value="playbook" className="flex-1 text-xs">Playbook</TabsTrigger>
+            <TabsTrigger value="trending" className="flex-1 text-xs">Trending</TabsTrigger>
+            <TabsTrigger value="ai" className="flex-1 text-xs">AI Agent</TabsTrigger>
+          </TabsList>
+          <div className={activeTab === 'playbook' ? '' : 'hidden'}>
+            <PlaybookView />
+          </div>
+          <div className={activeTab === 'trending' ? '' : 'hidden'}>
+            <TrendingIssues />
+          </div>
+          <div className={activeTab === 'ai' ? '' : 'hidden'}>
+            <AIChat />
+          </div>
+        </Tabs>
       </main>
     </div>
   );
