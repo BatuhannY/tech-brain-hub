@@ -55,6 +55,44 @@ const PlaybookView = () => {
 
   const playbookIssues = issues ?? [];
 
+  // Auto-refine new entries whenever issues change
+  const [autoRefiningIds, setAutoRefiningIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!playbookIssues.length || bulkRefining) return;
+    const unrefined = playbookIssues.filter(i => !refinedMap[i.id] && !autoRefiningIds.has(i.id) && !refiningIds.has(i.id));
+    if (!unrefined.length) return;
+
+    const ids = unrefined.map(i => i.id);
+    setAutoRefiningIds(prev => {
+      const next = new Set(prev);
+      ids.forEach(id => next.add(id));
+      return next;
+    });
+
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('ai-analytics', {
+          body: {
+            mode: 'generate-playbook',
+            issues: unrefined.map(i => ({ id: i.id, title: i.title, category: i.category, description: i.description, internal_fix: i.internal_fix })),
+          },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        setRefinedMap(prev => {
+          const newMap = { ...prev };
+          (data.entries || []).forEach((e: any) => {
+            newMap[e.id] = { id: e.id, summary: e.summary, steps: e.steps, prevention: e.prevention };
+          });
+          return newMap;
+        });
+      } catch (err: any) {
+        console.error('Auto-refine failed:', err);
+      }
+    })();
+  }, [playbookIssues]);
+
   const parseSteps = (fix: string | null): string[] => {
     if (!fix) return ['No fix details available.'];
     // Try to split by numbered steps, newlines, or bullet points
