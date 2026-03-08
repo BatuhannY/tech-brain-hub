@@ -256,7 +256,7 @@ const PlaybookView = ({ isAdmin = false }: { isAdmin?: boolean }) => {
                     <CardTitle className="text-[15px] font-semibold leading-snug">{issue.title}</CardTitle>
                     <div className="flex items-center gap-2 shrink-0">
                       <CategoryBadge category={issue.category} />
-                      {!refined && (
+                      {isAdmin && !refined && (
                         <Button variant="ghost" size="sm" className="gap-1 text-xs h-7 px-2 rounded-full" onClick={() => refineWithAI(issue)} disabled={isRefining}>
                           {isRefining ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
                           Refine
