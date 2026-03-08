@@ -36,6 +36,7 @@ const Dashboard = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('issues');
+  const [kbFilter, setKbFilter] = useState(false);
 
   const { data: issues, refetch, isLoading } = useQuery({
     queryKey: ['issue_logs'],
