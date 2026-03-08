@@ -99,6 +99,24 @@ const Dashboard = () => {
         </div>
       )}
 
+      <div className="flex items-center justify-between">
+        <Button
+          variant={kbFilter ? 'default' : 'outline'}
+          size="sm"
+          className="gap-1.5 h-8 rounded-full text-xs"
+          onClick={() => setKbFilter(!kbFilter)}
+        >
+          <BookOpen className="h-3.5 w-3.5" />
+          KB Proposed
+        </Button>
+        {kbFilter && (
+          <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={copyAllKbIssues}>
+            <Copy className="h-3.5 w-3.5" />
+            Export All
+          </Button>
+        )}
+      </div>
+
       <div className="grid grid-cols-3 gap-3">
         {[
           { label: 'Total', value: totalCount, color: 'text-foreground' },
