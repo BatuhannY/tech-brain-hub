@@ -20,6 +20,25 @@ const PlaybookView = () => {
   const [refinedMap, setRefinedMap] = useState<Record<string, RefinedEntry>>({});
   const [refiningIds, setRefiningIds] = useState<Set<string>>(new Set());
   const [bulkRefining, setBulkRefining] = useState(false);
+  const queryClient = useQueryClient();
+
+  // Realtime subscription to auto-refresh when issues change
+  useEffect(() => {
+    const channel = supabase
+      .channel('playbook-issue-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'issue_logs' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['playbook_issues'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const { data: issues, isLoading } = useQuery({
     queryKey: ['playbook_issues'],
