@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { CheckCircle2, XCircle, Bot, Globe, Wrench, BookOpen } from 'lucide-react';
+import RelatedIntelligence from '@/components/RelatedIntelligence';
 
 interface IssueDetailProps {
   issue: any;
