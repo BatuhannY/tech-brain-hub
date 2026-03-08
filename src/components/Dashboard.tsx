@@ -11,6 +11,7 @@ import IssueFormDialog from '@/components/IssueFormDialog';
 import IssueDetail from '@/components/IssueDetail';
 import TrendingIssues from '@/components/TrendingIssues';
 import AIChat from '@/components/AIChat';
+import PlaybookProposals from '@/components/PlaybookProposals';
 import AISearchBar from '@/components/AISearchBar';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
