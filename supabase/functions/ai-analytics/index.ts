@@ -160,12 +160,12 @@ ${issues.map((i: any, idx: number) => `[${idx}] [${i.category}] ${i.title}: ${i.
     }
 
     if (mode === "parse-chat") {
-      systemPrompt = `You are a support chat parser. Extract structured issue data from messy chat transcripts. IMPORTANT: Remove all personal names, usernames, handles, and identifying information from the output. Replace any names with generic terms like "the user", "the reporter", "a team member", etc.`;
-      userPrompt = `Parse this chat transcript and extract structured issue data. Strip out ALL personal names, usernames, and identifying info — anonymize everything:
+      systemPrompt = `You are a support chat parser. Extract structured issue data from messy chat transcripts. IMPORTANT: Remove all personal names, usernames, handles, and identifying information from the output. The description must be a direct, concise technical summary of the issue itself — do NOT use phrases like "the reporter states", "the user mentions", "according to the chat", etc. Write as if documenting the issue in a bug tracker.`;
+      userPrompt = `Parse this chat transcript and extract structured issue data. Strip out ALL personal names, usernames, and identifying info. The description should be a direct summary of the technical problem only — no references to reporters, users, or the conversation itself:
 
 ${chatTranscript}
 
-Extract the title, description, and any proposed fix steps mentioned.`;
+Extract the title, a concise technical description, and any proposed fix steps mentioned.`;
 
       const response = await callAI(LOVABLE_API_KEY, systemPrompt, userPrompt, [
         {
