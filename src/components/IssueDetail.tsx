@@ -57,14 +57,14 @@ const IssueDetail = ({ issue, onUpdated, onIssueSelect }: IssueDetailProps) => {
         .update({
           internal_fix: merged,
           solution_steps: merged,
-          status: 'Validated',
+          status: 'Resolved',
         } as any)
         .eq('id', issue.id);
       if (error) throw error;
-      toast.success('Fix validated and promoted to internal fix!');
+      toast.success('Fix confirmed and promoted to internal fix!');
       onUpdated();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to validate');
+      toast.error(err.message || 'Failed to confirm fix');
     } finally {
       setValidating(false);
     }
