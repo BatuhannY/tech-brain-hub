@@ -189,6 +189,9 @@ const PlaybookView = () => {
 
   return (
     <div className="space-y-5">
+      {/* Known Issues Status Banner */}
+      <KnownIssuesBanner />
+
       {/* Dynamic FAQ */}
       <DynamicFAQ issues={playbookIssues} />
 
