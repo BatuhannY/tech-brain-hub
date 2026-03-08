@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -12,14 +12,15 @@ const AdminLogin = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [forgotMode, setForgotMode] = useState(false);
-  const { signIn, resetPassword, user, isAdmin } = useAuth();
+  const { signIn, resetPassword, user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   // Redirect if already logged in as admin
-  if (user && isAdmin) {
-    navigate('/dashboard', { replace: true });
-    return null;
-  }
+  useEffect(() => {
+    if (!authLoading && user && isAdmin) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, isAdmin, authLoading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,9 +29,8 @@ const AdminLogin = () => {
     setLoading(false);
     if (error) {
       toast.error(error.message);
-    } else {
-      navigate('/dashboard');
     }
+    // Navigation will happen via the useEffect above once auth state updates
   };
 
   const handleForgot = async (e: React.FormEvent) => {
@@ -45,6 +45,14 @@ const AdminLogin = () => {
       setForgotMode(false);
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-muted-foreground text-sm">Loading…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
