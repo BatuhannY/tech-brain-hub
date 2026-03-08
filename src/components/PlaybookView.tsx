@@ -8,6 +8,7 @@ import { Search, CheckCircle2, Shield, Lightbulb, Loader2, Sparkles, BookOpen } 
 import { toast } from 'sonner';
 import CategoryBadge from '@/components/CategoryBadge';
 import DynamicFAQ from '@/components/DynamicFAQ';
+import KnownIssuesBanner from '@/components/KnownIssuesBanner';
 
 interface RefinedEntry {
   id: string;
@@ -188,6 +189,9 @@ const PlaybookView = () => {
 
   return (
     <div className="space-y-5">
+      {/* Known Issues Status Banner */}
+      <KnownIssuesBanner />
+
       {/* Dynamic FAQ */}
       <DynamicFAQ issues={playbookIssues} />
 
