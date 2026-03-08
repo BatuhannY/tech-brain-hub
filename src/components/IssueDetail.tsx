@@ -12,6 +12,7 @@ import RelatedIntelligence from '@/components/RelatedIntelligence';
 interface IssueDetailProps {
   issue: any;
   onUpdated: () => void;
+  onIssueSelect?: (issueId: string) => void;
 }
 
 const IssueDetail = ({ issue, onUpdated }: IssueDetailProps) => {
