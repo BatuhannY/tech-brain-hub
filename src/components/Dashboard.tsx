@@ -28,6 +28,9 @@ import {
 import GlobalInsights from '@/components/GlobalInsights';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { useAuth } from '@/hooks/useAuth';
+import { LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import {
   AlertDialog,
   AlertDialogAction,
