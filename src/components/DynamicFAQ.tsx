@@ -19,9 +19,9 @@ const DynamicFAQ = ({ issues }: { issues: any[] }) => {
     setLoaded(true);
     setLoading(true);
 
-    (async () => {
+    const generateFAQ = async () => {
       try {
-        const { data, error } = await supabase.functions.invoke('ai-analytics', {
+        const response = await supabase.functions.invoke('ai-analytics', {
           body: {
             mode: 'generate-faq',
             issues: issues.slice(0, 50).map(i => ({
@@ -31,16 +31,28 @@ const DynamicFAQ = ({ issues }: { issues: any[] }) => {
             })),
           },
         });
-        if (error) throw error;
-        if (data?.error) throw new Error(data.error);
-        setFaqs(data.faqs || []);
+        console.log('FAQ response:', JSON.stringify(response.data));
+        if (response.error) {
+          console.error('FAQ invoke error:', response.error);
+          return;
+        }
+        const result = response.data;
+        if (result?.error) {
+          console.error('FAQ AI error:', result.error);
+          return;
+        }
+        if (result?.faqs) {
+          setFaqs(result.faqs);
+        }
       } catch (err) {
         console.error('FAQ generation failed:', err);
       } finally {
         setLoading(false);
       }
-    })();
-  }, [issues]);
+    };
+
+    generateFAQ();
+  }, [issues, loaded]);
 
   if (loading) {
     return (
