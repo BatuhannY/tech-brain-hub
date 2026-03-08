@@ -59,6 +59,7 @@ const IssueFormDialog = ({ open, onOpenChange, issue, onSaved }: IssueFormDialog
   const [copilotSuggestion, setCopilotSuggestion] = useState<CopilotSuggestion | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [draftingFix, setDraftingFix] = useState(false);
+  const [showDuplicateConfirm, setShowDuplicateConfirm] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
