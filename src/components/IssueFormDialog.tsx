@@ -126,11 +126,21 @@ const IssueFormDialog = ({ open, onOpenChange, issue, onSaved }: IssueFormDialog
     }
   };
 
-  const handleSave = async () => {
+  const handleSaveAttempt = () => {
     if (!title.trim()) {
       toast.error('Title is required');
       return;
     }
+    // If copilot found a match and this is a new issue, confirm
+    if (!issue && copilotSuggestion?.match_found) {
+      setShowDuplicateConfirm(true);
+      return;
+    }
+    handleSave();
+  };
+
+  const handleSave = async () => {
+    setShowDuplicateConfirm(false);
     setSaving(true);
     try {
       let finalFix = internalFix;
