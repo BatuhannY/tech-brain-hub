@@ -246,6 +246,110 @@ Generate a structured playbook entry for each issue.`;
       return jsonResponse(response, corsHeaders);
     }
 
+    if (mode === "daily-summary") {
+      systemPrompt = `You are an executive IT briefing analyst. Analyze all issue activity from the last 24 hours and generate a concise daily summary with exactly 3 bullet points. Be specific with numbers and issue titles.`;
+      userPrompt = `Analyze these ${issues.length} issues and generate a daily executive briefing. Focus on activity from the last 24 hours:
+
+${JSON.stringify(issues, null, 2)}
+
+Generate: Key Wins (resolved/validated), Emerging Trends (new patterns), and Recommended Focus for Tomorrow.`;
+
+      const response = await callAI(LOVABLE_API_KEY, systemPrompt, userPrompt, [
+        {
+          type: "function",
+          function: {
+            name: "daily_summary",
+            description: "Generate daily executive briefing.",
+            parameters: {
+              type: "object",
+              properties: {
+                key_wins: { type: "string", description: "1-2 sentence summary of key wins/resolutions in the last 24h" },
+                emerging_trends: { type: "string", description: "1-2 sentence summary of emerging issue trends" },
+                recommended_focus: { type: "string", description: "1-2 sentence actionable recommendation for tomorrow" }
+              },
+              required: ["key_wins", "emerging_trends", "recommended_focus"],
+              additionalProperties: false
+            }
+          }
+        }
+      ], { type: "function", function: { name: "daily_summary" } });
+
+      return jsonResponse(response, corsHeaders);
+    }
+
+    if (mode === "generate-faq") {
+      systemPrompt = `You are a customer-facing FAQ writer. Identify the top 5 most frequent or highest-impact validated solutions from issue data and present them as clear Q&A pairs. Questions should be natural, the way a user would ask. Answers should be helpful, concise, and reference the fix.`;
+      userPrompt = `From these ${issues.length} issues, identify the 5 most impactful/frequent validated solutions and write FAQ entries:
+
+${JSON.stringify(issues, null, 2)}
+
+Write natural questions a user would ask and clear answers based on the validated fixes.`;
+
+      const response = await callAI(LOVABLE_API_KEY, systemPrompt, userPrompt, [
+        {
+          type: "function",
+          function: {
+            name: "generate_faq",
+            description: "Generate top 5 FAQ entries.",
+            parameters: {
+              type: "object",
+              properties: {
+                faqs: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      question: { type: "string", description: "Natural user question" },
+                      answer: { type: "string", description: "Clear, helpful answer with fix details" }
+                    },
+                    required: ["question", "answer"],
+                    additionalProperties: false
+                  }
+                }
+              },
+              required: ["faqs"],
+              additionalProperties: false
+            }
+          }
+        }
+      ], { type: "function", function: { name: "generate_faq" } });
+
+      return jsonResponse(response, corsHeaders);
+    }
+
+    if (mode === "draft-announcement") {
+      const issue = issues[0];
+      systemPrompt = `You are a friendly internal communications writer. Draft a professional, modern Slack/Teams-ready team update message about a resolved issue. Use emojis for a modern "Company News" feel. Include: a brief summary of the fix, reference to the playbook, and a 1-sentence pro-tip to prevent the issue in the future. Keep it under 200 words. Do NOT use markdown formatting - use plain text with emojis.`;
+      userPrompt = `Draft a team update announcement for this resolved issue:
+
+Title: ${issue.title}
+Category: ${issue.category}
+Description: ${issue.description || 'N/A'}
+Fix: ${issue.internal_fix || issue.ai_suggested_fix || 'N/A'}
+
+Write a friendly, emoji-rich team announcement.`;
+
+      const response = await callAI(LOVABLE_API_KEY, systemPrompt, userPrompt, [
+        {
+          type: "function",
+          function: {
+            name: "draft_announcement",
+            description: "Draft a team update announcement.",
+            parameters: {
+              type: "object",
+              properties: {
+                announcement: { type: "string", description: "The full announcement text with emojis" }
+              },
+              required: ["announcement"],
+              additionalProperties: false
+            }
+          }
+        }
+      ], { type: "function", function: { name: "draft_announcement" } });
+
+      return jsonResponse(response, corsHeaders);
+    }
+
     if (mode === "status-report") {
       systemPrompt = `You are a concise IT status reporter. Generate a single, punchy sentence summarizing the current system health based on issue data. Include specific metrics when available. Be direct and actionable.`;
       userPrompt = `Based on these ${issues.length} recent issues, generate a one-sentence status report:

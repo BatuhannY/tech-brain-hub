@@ -98,6 +98,9 @@ const HealthDashboard = () => {
 
   return (
     <div className="space-y-5">
+      {/* Daily Summary */}
+      <DailySummary issues={issues ?? []} />
+
       {/* Status Report */}
       <Card className="shadow-none border-primary/20">
         <CardContent className="p-4">
