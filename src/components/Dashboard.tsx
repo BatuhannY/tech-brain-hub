@@ -28,6 +28,9 @@ import {
 import GlobalInsights from '@/components/GlobalInsights';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { useAuth } from '@/hooks/useAuth';
+import { LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +43,8 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const Dashboard = () => {
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
   const [formOpen, setFormOpen] = useState(false);
   const [editingIssue, setEditingIssue] = useState<any>(null);
   const [searchResults, setSearchResults] = useState<any[] | null>(null);
@@ -235,6 +240,15 @@ const Dashboard = () => {
           <h1 className="text-lg font-semibold text-foreground">Knowledge Hub</h1>
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-muted-foreground"
+              onClick={async () => { await signOut(); navigate('/admin'); }}
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="rounded-full gap-1.5">
