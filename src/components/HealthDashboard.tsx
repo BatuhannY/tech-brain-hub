@@ -93,7 +93,7 @@ const HealthDashboard = () => {
   }
 
   const totalCount = issues?.length ?? 0;
-  const validatedCount = issues?.filter((i) => i.status === 'Validated').length ?? 0;
+  const validatedCount = issues?.filter((i) => i.status === 'Resolved').length ?? 0;
   const unresolvedCount = issues?.filter((i) => i.status === 'Unresolved').length ?? 0;
 
   return (
