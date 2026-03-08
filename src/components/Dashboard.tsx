@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Bug, Pencil, Trash2, ChevronRight } from 'lucide-react';
+import { Plus, Bug, Pencil, Trash2, ChevronRight, Copy, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,7 +11,7 @@ import IssueFormDialog from '@/components/IssueFormDialog';
 import IssueDetail from '@/components/IssueDetail';
 import TrendingIssues from '@/components/TrendingIssues';
 import AIChat from '@/components/AIChat';
-import PlaybookProposals from '@/components/PlaybookProposals';
+import { formatIssueForExport } from '@/lib/playbook-export';
 import AISearchBar from '@/components/AISearchBar';
 import KnowledgeHealth from '@/components/KnowledgeHealth';
 import GlobalInsights from '@/components/GlobalInsights';
@@ -36,6 +36,7 @@ const Dashboard = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('issues');
+  const [kbFilter, setKbFilter] = useState(false);
 
   const { data: issues, refetch, isLoading } = useQuery({
     queryKey: ['issue_logs'],
@@ -61,10 +62,24 @@ const Dashboard = () => {
     setDeleteId(null);
   };
 
-  const displayIssues = searchResults ?? issues ?? [];
+  const baseIssues = searchResults ?? issues ?? [];
+  const displayIssues = kbFilter ? baseIssues.filter(i => i.kb_proposed) : baseIssues;
   const totalCount = issues?.length ?? 0;
   const validatedCount = issues?.filter(i => i.status === 'Validated').length ?? 0;
   const unresolvedCount = issues?.filter(i => i.status === 'Unresolved').length ?? 0;
+
+  const copyIssueAsMarkdown = (issue: any) => {
+    navigator.clipboard.writeText(formatIssueForExport(issue));
+    toast.success('Copied as Markdown');
+  };
+
+  const copyAllKbIssues = () => {
+    const kbIssues = (issues ?? []).filter(i => i.kb_proposed);
+    if (!kbIssues.length) return;
+    const all = kbIssues.map(formatIssueForExport).join('\n\n---\n\n');
+    navigator.clipboard.writeText(all);
+    toast.success(`${kbIssues.length} KB entries copied`);
+  };
 
   const IssuesList = () => (
     <>
@@ -83,6 +98,24 @@ const Dashboard = () => {
           </Button>
         </div>
       )}
+
+      <div className="flex items-center justify-between">
+        <Button
+          variant={kbFilter ? 'default' : 'outline'}
+          size="sm"
+          className="gap-1.5 h-8 rounded-full text-xs"
+          onClick={() => setKbFilter(!kbFilter)}
+        >
+          <BookOpen className="h-3.5 w-3.5" />
+          KB Proposed
+        </Button>
+        {kbFilter && (
+          <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={copyAllKbIssues}>
+            <Copy className="h-3.5 w-3.5" />
+            Export All
+          </Button>
+        )}
+      </div>
 
       <div className="grid grid-cols-3 gap-3">
         {[
@@ -138,6 +171,17 @@ const Dashboard = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                  {issue.kb_proposed && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-primary"
+                      onClick={() => copyIssueAsMarkdown(issue)}
+                      title="Copy as Markdown"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -189,7 +233,6 @@ const Dashboard = () => {
             <TabsTrigger value="issues" className="flex-1 text-xs">Issues</TabsTrigger>
             <TabsTrigger value="trending" className="flex-1 text-xs">Trending</TabsTrigger>
             <TabsTrigger value="health" className="flex-1 text-xs">Health</TabsTrigger>
-            <TabsTrigger value="playbook" className="flex-1 text-xs">Playbook</TabsTrigger>
             <TabsTrigger value="ai" className="flex-1 text-xs">AI Agent</TabsTrigger>
           </TabsList>
           <div className={activeTab === 'issues' ? 'space-y-5' : 'hidden'}>
@@ -200,9 +243,6 @@ const Dashboard = () => {
           </div>
           <div className={activeTab === 'health' ? '' : 'hidden'}>
             <KnowledgeHealth />
-          </div>
-          <div className={activeTab === 'playbook' ? '' : 'hidden'}>
-            <PlaybookProposals />
           </div>
           <div className={activeTab === 'ai' ? '' : 'hidden'}>
             <AIChat onIssueCreated={refetch} />
