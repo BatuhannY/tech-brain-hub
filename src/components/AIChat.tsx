@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Send, Loader2, Bot, User, CheckCircle2, Sparkles, RotateCcw, Shield } from 'lucide-react';
+import { Send, Loader2, Bot, User, CheckCircle2, Sparkles, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 
@@ -11,10 +11,9 @@ type Message = { role: 'user' | 'assistant'; content: string };
 
 interface AIChatProps {
   onIssueCreated?: () => void;
-  isAdmin?: boolean;
 }
 
-const AIChat = ({ onIssueCreated, isAdmin = false }: AIChatProps) => {
+const AIChat = ({ onIssueCreated }: AIChatProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -39,7 +38,7 @@ const AIChat = ({ onIssueCreated, isAdmin = false }: AIChatProps) => {
 
     try {
       const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: { messages: allMessages, addAsIssue: isAdmin && addAsIssue, isAdmin },
+        body: { messages: allMessages, addAsIssue },
       });
       if (error) throw error;
       if (data?.error) {
@@ -60,10 +59,6 @@ const AIChat = ({ onIssueCreated, isAdmin = false }: AIChatProps) => {
         toast.success('Issue added to the database!');
         onIssueCreated?.();
       }
-      if (data.commandExecuted) {
-        toast.success('Command executed successfully!');
-        onIssueCreated?.(); // refresh issue list
-      }
     } catch (err: any) {
       toast.error(err.message || 'AI request failed');
     } finally {
@@ -76,10 +71,6 @@ const AIChat = ({ onIssueCreated, isAdmin = false }: AIChatProps) => {
     setLastIssueAdded(false);
   };
 
-  const adminHints = ['Show analytics summary', 'What needs attention?', 'Resolve issue...', 'Recommend fix for unresolved issues'];
-  const publicHints = ['VPN not connecting', 'Outlook keeps crashing', "Can't access shared drive"];
-  const hints = isAdmin ? adminHints : publicHints;
-
   return (
     <div className="flex flex-col h-[calc(100vh-220px)] min-h-[400px]">
       {/* Messages */}
@@ -90,23 +81,13 @@ const AIChat = ({ onIssueCreated, isAdmin = false }: AIChatProps) => {
               <Sparkles className="h-8 w-8 text-primary" />
             </div>
             <div>
-              <div className="flex items-center justify-center gap-2">
-                <p className="text-base font-semibold text-foreground">AI Issue Analyst</p>
-                {isAdmin && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                    <Shield className="h-3 w-3" />
-                    Admin
-                  </span>
-                )}
-              </div>
+              <p className="text-base font-semibold text-foreground">AI Issue Analyst</p>
               <p className="text-sm text-muted-foreground mt-2 max-w-sm leading-relaxed">
-                {isAdmin
-                  ? 'Analyze issues, run management commands, get analytics, and receive fix recommendations for unresolved problems.'
-                  : 'Describe a tech issue and I\'ll analyze it, suggest fixes from our knowledge base, and help categorize it for future reference.'}
+                Describe a tech issue and I'll analyze it, suggest fixes from our knowledge base, and help categorize it for future reference.
               </p>
             </div>
             <div className="flex flex-wrap gap-2 mt-2 max-w-md justify-center">
-              {hints.map(hint => (
+              {['VPN not connecting', 'Outlook keeps crashing', 'Can\'t access shared drive'].map(hint => (
                 <button
                   key={hint}
                   onClick={() => setInput(hint)}
@@ -174,18 +155,14 @@ const AIChat = ({ onIssueCreated, isAdmin = false }: AIChatProps) => {
       <div className="border-t border-border pt-3 space-y-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {isAdmin && (
-              <>
-                <Checkbox
-                  id="addIssue"
-                  checked={addAsIssue}
-                  onCheckedChange={(v) => setAddAsIssue(!!v)}
-                />
-                <label htmlFor="addIssue" className="text-xs text-muted-foreground cursor-pointer select-none">
-                  Add as a new issue
-                </label>
-              </>
-            )}
+            <Checkbox
+              id="addIssue"
+              checked={addAsIssue}
+              onCheckedChange={(v) => setAddAsIssue(!!v)}
+            />
+            <label htmlFor="addIssue" className="text-xs text-muted-foreground cursor-pointer select-none">
+              Add as a new issue
+            </label>
           </div>
           {messages.length > 0 && (
             <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground gap-1" onClick={handleClear}>
@@ -199,7 +176,7 @@ const AIChat = ({ onIssueCreated, isAdmin = false }: AIChatProps) => {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-            placeholder={isAdmin ? "Ask about issues, run commands, or get analytics..." : "Describe a tech issue..."}
+            placeholder="Describe a tech issue..."
             className="min-h-[44px] max-h-32 resize-none text-sm rounded-xl"
             rows={1}
           />

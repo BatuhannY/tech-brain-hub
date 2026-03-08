@@ -49,7 +49,7 @@ const PublicPlaybook = () => {
             <TrendingIssues />
           </div>
           <div className={activeTab === 'ai' ? '' : 'hidden'}>
-            <AIChat isAdmin={false} />
+            <AIChat />
           </div>
         </Tabs>
       </main>
