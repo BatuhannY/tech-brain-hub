@@ -210,7 +210,12 @@ const Dashboard = () => {
                 <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${expandedId === issue.id ? 'rotate-90' : ''}`} />
               </div>
               {expandedId === issue.id && (
-                <IssueDetail issue={issue} onUpdated={refetch} onIssueSelect={(id) => setExpandedId(id)} />
+                <IssueDetail issue={issue} onUpdated={refetch} onIssueSelect={(id) => {
+                  setExpandedId(id);
+                  setTimeout(() => {
+                    document.getElementById(`issue-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }, 100);
+                }} />
               )}
             </div>
           ))}
