@@ -67,19 +67,16 @@ const PlaybookView = ({ isAdmin = false }: { isAdmin?: boolean }) => {
 
   const playbookIssues = issues ?? [];
 
-  const [autoRefiningIds, setAutoRefiningIds] = useState<Set<string>>(new Set());
+  const [autoRefineAttempted, setAutoRefineAttempted] = useState(false);
+
+  const issueIds = playbookIssues.map(i => i.id).join(',');
 
   useEffect(() => {
-    if (!isAdmin || !playbookIssues.length || bulkRefining) return;
-    const unrefined = playbookIssues.filter(i => !refinedMap[i.id] && !autoRefiningIds.has(i.id) && !refiningIds.has(i.id));
-    if (!unrefined.length) return;
+    if (!isAdmin || !playbookIssues.length || bulkRefining || autoRefineAttempted) return;
+    setAutoRefineAttempted(true);
 
-    const ids = unrefined.map(i => i.id);
-    setAutoRefiningIds(prev => {
-      const next = new Set(prev);
-      ids.forEach(id => next.add(id));
-      return next;
-    });
+    const unrefined = playbookIssues.filter(i => !refinedMap[i.id] && !refiningIds.has(i.id));
+    if (!unrefined.length) return;
 
     (async () => {
       try {
@@ -102,7 +99,7 @@ const PlaybookView = ({ isAdmin = false }: { isAdmin?: boolean }) => {
         console.error('Auto-refine failed:', err);
       }
     })();
-  }, [playbookIssues]);
+  }, [issueIds, isAdmin]);
 
   const stripHtml = (html: string): string => {
     const doc = new DOMParser().parseFromString(html, 'text/html');
