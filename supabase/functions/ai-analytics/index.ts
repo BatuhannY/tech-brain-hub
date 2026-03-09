@@ -1,4 +1,3 @@
-// v3 - public access fix: verify_jwt=false redeployment
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -6,6 +5,34 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+// --- Cache & Throttle ---
+const cache = new Map<string, { data: any; ts: number }>();
+const CACHE_TTL = 120_000; // 2min
+let lastCallTs = 0;
+const MIN_INTERVAL = 2_000;
+
+function getCached(key: string) {
+  const entry = cache.get(key);
+  if (entry && Date.now() - entry.ts < CACHE_TTL) return entry.data;
+  if (entry) cache.delete(key);
+  return null;
+}
+function setCache(key: string, data: any) {
+  cache.set(key, { data, ts: Date.now() });
+  if (cache.size > 100) { const oldest = [...cache.entries()].sort((a, b) => a[1].ts - b[1].ts)[0]; if (oldest) cache.delete(oldest[0]); }
+}
+async function throttle() {
+  const now = Date.now();
+  const wait = MIN_INTERVAL - (now - lastCallTs);
+  if (wait > 0) await new Promise(r => setTimeout(r, wait));
+  lastCallTs = Date.now();
+}
+
+function buildCacheKey(mode: string, issues: any[], extra?: string): string {
+  const issueHash = issues?.length ? `${issues.length}:${issues.map((i: any) => i.id || i.title).slice(0, 5).join(',')}` : 'none';
+  return `analytics:${mode}:${issueHash}${extra ? ':' + extra : ''}`;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -15,6 +42,13 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const { mode, issues, issueTitle, issueDescription, chatTranscript } = await req.json();
+
+    // Build cache key based on mode and inputs
+    const cacheKey = buildCacheKey(mode, issues || [], (issueTitle || chatTranscript || '').slice(0, 80).toLowerCase());
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return jsonResponse(cached, corsHeaders);
+    }
 
     let systemPrompt = "";
     let userPrompt = "";
@@ -29,6 +63,7 @@ ${JSON.stringify(issues.map((i: any) => ({ title: i.title, category: i.category,
 
 Identify gaps and suggest 3 proactive guides to write.`;
 
+      await throttle();
       const response = await callAI(LOVABLE_API_KEY, systemPrompt, userPrompt, [
         {
           type: "function",
@@ -78,6 +113,7 @@ Identify gaps and suggest 3 proactive guides to write.`;
         }
       ], { type: "function", function: { name: "report_knowledge_health" } });
 
+      if (!response.error) setCache(cacheKey, response);
       return jsonResponse(response, corsHeaders);
     }
 
@@ -89,6 +125,7 @@ ${issues.map((i: any) => `- [${i.category}] ${i.title}: ${i.description || 'No d
 
 Identify the master root cause — not individual symptoms but the systemic pattern.`;
 
+      await throttle();
       const response = await callAI(LOVABLE_API_KEY, systemPrompt, userPrompt, [
         {
           type: "function",
@@ -113,6 +150,7 @@ Identify the master root cause — not individual symptoms but the systemic patt
         }
       ], { type: "function", function: { name: "report_root_cause" } });
 
+      if (!response.error) setCache(cacheKey, response);
       return jsonResponse(response, corsHeaders);
     }
 
@@ -126,6 +164,7 @@ Find the most semantically related issues from this list. Return their indices (
 
 ${issues.map((i: any, idx: number) => `[${idx}] [${i.category}] ${i.title}: ${i.description || 'N/A'}`).join('\n')}`;
 
+      await throttle();
       const response = await callAI(LOVABLE_API_KEY, systemPrompt, userPrompt, [
         {
           type: "function",
@@ -156,6 +195,7 @@ ${issues.map((i: any, idx: number) => `[${idx}] [${i.category}] ${i.title}: ${i.
         }
       ], { type: "function", function: { name: "report_related_issues" } });
 
+      if (!response.error) setCache(cacheKey, response);
       return jsonResponse(response, corsHeaders);
     }
 
@@ -167,6 +207,7 @@ ${chatTranscript}
 
 Extract the title, a concise technical description, and any proposed fix steps mentioned.`;
 
+      await throttle();
       const response = await callAI(LOVABLE_API_KEY, systemPrompt, userPrompt, [
         {
           type: "function",
@@ -189,6 +230,7 @@ Extract the title, a concise technical description, and any proposed fix steps m
         }
       ], { type: "function", function: { name: "parse_chat_transcript" } });
 
+      if (!response.error) setCache(cacheKey, response);
       return jsonResponse(response, corsHeaders);
     }
 
@@ -211,6 +253,7 @@ Internal Fix: ${i.internal_fix}
 
 Generate structured playbook entries written from the employee/agent perspective. Use actionable language like "Navigate to...", "Check if...", "Escalate to...".`;
 
+      await throttle();
       const response = await callAI(LOVABLE_API_KEY, systemPrompt, userPrompt, [
         {
           type: "function",
@@ -244,6 +287,7 @@ Generate structured playbook entries written from the employee/agent perspective
         }
       ], { type: "function", function: { name: "generate_playbook_entries" } });
 
+      if (!response.error) setCache(cacheKey, response);
       return jsonResponse(response, corsHeaders);
     }
 
@@ -255,6 +299,7 @@ ${JSON.stringify(issues, null, 2)}
 
 Generate: Key Wins (resolved/validated), Emerging Trends (new patterns), and Recommended Focus for Tomorrow.`;
 
+      await throttle();
       const response = await callAI(LOVABLE_API_KEY, systemPrompt, userPrompt, [
         {
           type: "function",
@@ -275,17 +320,19 @@ Generate: Key Wins (resolved/validated), Emerging Trends (new patterns), and Rec
         }
       ], { type: "function", function: { name: "daily_summary" } });
 
+      if (!response.error) setCache(cacheKey, response);
       return jsonResponse(response, corsHeaders);
     }
 
     if (mode === "generate-faq") {
-      systemPrompt = `You are an internal support FAQ writer for a company's employee-facing knowledge hub. Identify the top 5 most frequent or highest-impact validated solutions from issue data and present them as clear Q&A pairs. Questions should be phrased the way a support agent or employee would ask when looking for help (e.g. "How do I handle X?" or "What should I do when Y happens?"). Answers should be actionable, concise instructions that guide the employee through resolving the issue. Never address "customers" — this is an internal tool for staff.`;
+      systemPrompt = `You are an internal support FAQ writer for a company's employee-facing knowledge hub. Identify the top 5 most frequent or highest-impact validated solutions from issue data and present them as clear Q&A pairs. Questions should be phrased the way a support agent or employee would ask when looking for help. Answers should be actionable, concise instructions.`;
       userPrompt = `From these ${issues.length} issues, identify the 5 most impactful/frequent validated solutions and write FAQ entries for employees/support agents:
 
 ${JSON.stringify(issues, null, 2)}
 
-Write natural questions an employee or support agent would ask and clear, actionable answers based on the validated fixes. Frame everything from the employee's perspective (e.g. "How do I reset a user's PIN?" not "Why can't I reset my PIN?").`;
+Write natural questions an employee or support agent would ask and clear, actionable answers based on the validated fixes.`;
 
+      await throttle();
       const response = await callAI(LOVABLE_API_KEY, systemPrompt, userPrompt, [
         {
           type: "function",
@@ -315,6 +362,7 @@ Write natural questions an employee or support agent would ask and clear, action
         }
       ], { type: "function", function: { name: "generate_faq" } });
 
+      if (!response.error) setCache(cacheKey, response);
       return jsonResponse(response, corsHeaders);
     }
 
@@ -330,6 +378,7 @@ Fix: ${issue.internal_fix || issue.ai_suggested_fix || 'N/A'}
 
 Write a friendly, emoji-rich team announcement.`;
 
+      await throttle();
       const response = await callAI(LOVABLE_API_KEY, systemPrompt, userPrompt, [
         {
           type: "function",
@@ -348,6 +397,7 @@ Write a friendly, emoji-rich team announcement.`;
         }
       ], { type: "function", function: { name: "draft_announcement" } });
 
+      if (!response.error) setCache(cacheKey, response);
       return jsonResponse(response, corsHeaders);
     }
 
@@ -361,6 +411,7 @@ Recent issues: ${issues.slice(0, 10).map((i: any) => `[${i.category}] ${i.title}
 
 Generate a single professional status sentence.`;
 
+      await throttle();
       const response = await callAI(LOVABLE_API_KEY, systemPrompt, userPrompt, [
         {
           type: "function",
@@ -379,6 +430,7 @@ Generate a single professional status sentence.`;
         }
       ], { type: "function", function: { name: "report_status" } });
 
+      if (!response.error) setCache(cacheKey, response);
       return jsonResponse(response, corsHeaders);
     }
 
@@ -404,7 +456,7 @@ async function callAI(apiKey: string, system: string, user: string, tools: any[]
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
+      model: "google/gemini-2.5-flash-lite",
       messages: [
         { role: "system", content: system },
         { role: "user", content: user },

@@ -1,4 +1,3 @@
-// v3 - public access fix: verify_jwt=false redeployment
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -7,16 +6,46 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// --- Cache & Throttle ---
+const cache = new Map<string, { data: any; ts: number }>();
+const CACHE_TTL = 120_000; // 2min
+let lastCallTs = 0;
+const MIN_INTERVAL = 2_000;
+
+function getCached(key: string) {
+  const entry = cache.get(key);
+  if (entry && Date.now() - entry.ts < CACHE_TTL) return entry.data;
+  if (entry) cache.delete(key);
+  return null;
+}
+function setCache(key: string, data: any) {
+  cache.set(key, { data, ts: Date.now() });
+  if (cache.size > 50) { const oldest = [...cache.entries()].sort((a, b) => a[1].ts - b[1].ts)[0]; if (oldest) cache.delete(oldest[0]); }
+}
+async function throttle() {
+  const now = Date.now();
+  const wait = MIN_INTERVAL - (now - lastCallTs);
+  if (wait > 0) await new Promise(r => setTimeout(r, wait));
+  lastCallTs = Date.now();
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const { title, description, mode } = await req.json();
-    // mode: "suggest" (title typing) or "draft" (create with empty resolution)
 
     if (!title && !description) {
       return new Response(JSON.stringify({ error: "Title or description required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const cacheKey = `copilot:${mode}:${(title || '').trim().toLowerCase()}:${(description || '').trim().toLowerCase().slice(0, 80)}`;
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return new Response(JSON.stringify(cached), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -26,7 +55,6 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    // Fetch existing issues with fixes for matching
     const { data: existingIssues } = await supabase
       .from("issue_logs")
       .select("id, title, description, category, status, internal_fix, ai_suggested_fix, web_fix, solution_steps, report_count")
@@ -36,10 +64,11 @@ serve(async (req) => {
     const issues = existingIssues || [];
 
     if (mode === "suggest") {
-      // Check DB for similar issues — use AI to find semantic matches
       const issuesList = issues.map((i, idx) =>
         `[${idx}] "${i.title}" (${i.category}/${i.status}) - ${i.description || 'N/A'}`
       ).join("\n");
+
+      await throttle();
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -70,8 +99,8 @@ ${issuesList || "None yet"}`,
                   match_found: { type: "boolean", description: "True if a semantically similar issue exists" },
                   match_index: { type: "number", description: "Index of matched issue or -1" },
                   match_title: { type: "string", description: "Title of matched issue if found" },
-                  existing_fix: { type: "string", description: "The fix from the matched issue (internal_fix > ai_suggested_fix > web_fix)" },
-                  proposed_draft_fix: { type: "string", description: "If no match, a brief proposed fix based on IT knowledge. Use bullet points." },
+                  existing_fix: { type: "string", description: "The fix from the matched issue" },
+                  proposed_draft_fix: { type: "string", description: "If no match, a brief proposed fix. Use bullet points." },
                   suggested_category: { type: "string", enum: ["Bug", "Network", "Access", "Hardware", "Software", "Security", "Other"] },
                 },
                 required: ["match_found", "match_index", "proposed_draft_fix", "suggested_category"],
@@ -95,22 +124,22 @@ ${issuesList || "None yet"}`,
 
       const parsed = JSON.parse(toolCall.function.arguments);
 
-      // If match found, enrich with actual fix data from DB
       if (parsed.match_found && parsed.match_index >= 0 && parsed.match_index < issues.length) {
         const matched = issues[parsed.match_index];
-        const bestFix = matched.internal_fix || matched.ai_suggested_fix || matched.web_fix || matched.solution_steps || "";
-        parsed.existing_fix = bestFix;
+        parsed.existing_fix = matched.internal_fix || matched.ai_suggested_fix || matched.web_fix || matched.solution_steps || "";
         parsed.match_title = matched.title;
         parsed.match_id = matched.id;
         parsed.match_status = matched.status;
       }
 
+      setCache(cacheKey, parsed);
       return new Response(JSON.stringify(parsed), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
 
     } else if (mode === "draft") {
-      // Generate a fix based on title + description
+      await throttle();
+
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -118,7 +147,7 @@ ${issuesList || "None yet"}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: "google/gemini-2.5-flash-lite",
           messages: [
             {
               role: "system",
@@ -156,7 +185,10 @@ ${issuesList || "None yet"}`,
       const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
       if (!toolCall?.function?.arguments) throw new Error("No AI response");
 
-      return new Response(JSON.stringify(JSON.parse(toolCall.function.arguments)), {
+      const result = JSON.parse(toolCall.function.arguments);
+      setCache(cacheKey, result);
+
+      return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

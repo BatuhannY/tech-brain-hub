@@ -1,4 +1,3 @@
-// v3 - public access fix: verify_jwt=false redeployment
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -6,6 +5,29 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+// --- Cache & Throttle ---
+const cache = new Map<string, { data: any; ts: number }>();
+const CACHE_TTL = 90_000; // 90s
+let lastCallTs = 0;
+const MIN_INTERVAL = 2_000;
+
+function getCached(key: string) {
+  const entry = cache.get(key);
+  if (entry && Date.now() - entry.ts < CACHE_TTL) return entry.data;
+  if (entry) cache.delete(key);
+  return null;
+}
+function setCache(key: string, data: any) {
+  cache.set(key, { data, ts: Date.now() });
+  if (cache.size > 50) { const oldest = [...cache.entries()].sort((a, b) => a[1].ts - b[1].ts)[0]; if (oldest) cache.delete(oldest[0]); }
+}
+async function throttle() {
+  const now = Date.now();
+  const wait = MIN_INTERVAL - (now - lastCallTs);
+  if (wait > 0) await new Promise(r => setTimeout(r, wait));
+  lastCallTs = Date.now();
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -18,6 +40,18 @@ serve(async (req) => {
       });
     }
 
+    // Cache key: last user message (skip cache if addAsIssue since it mutates DB)
+    const lastUserMsg = [...messages].reverse().find((m: any) => m.role === "user")?.content || "";
+    const cacheKey = `chat:${lastUserMsg.trim().toLowerCase().slice(0, 200)}`;
+    if (!addAsIssue) {
+      const cached = getCached(cacheKey);
+      if (cached) {
+        return new Response(JSON.stringify(cached), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -25,7 +59,6 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch existing issues with full fix data
     const { data: existingIssues } = await supabase
       .from("issue_logs")
       .select("title, category, status, description, internal_fix, ai_suggested_fix, web_fix, solution_steps, report_count")
@@ -33,8 +66,6 @@ serve(async (req) => {
       .limit(50);
 
     const allIssues = existingIssues || [];
-
-    // Separate resolved from unresolved
     const resolved = allIssues.filter(i => i.status === "Resolved");
     const unresolved = allIssues.filter(i => i.status !== "Resolved");
 
@@ -66,9 +97,9 @@ BEHAVIOR:
 1. Check resolved fixes first — reuse proven solutions.
 2. Analyze the tech issue and suggest a category (Bug, Network, Access, Hardware, Software, Security, Other).
 3. Provide actionable bullet-point fixes — NEVER just describe the bug back.
-4. Learn from past issues: reference patterns you see (e.g., "This is the 3rd VPN issue — consider documenting a VPN troubleshooting guide").
-5. Suggest ideas to expand the knowledge base (related issues to document, preventive measures).
-6. Reference existing issues in the database when relevant, noting how many times they've been reported.
+4. Learn from past issues: reference patterns you see.
+5. Suggest ideas to expand the knowledge base.
+6. Reference existing issues in the database when relevant.
 
 RESOLVED FIXES (use these first):
 ${resolvedContext}
@@ -84,35 +115,35 @@ Be concise, use markdown formatting with generous spacing, and focus on actionab
     ];
 
     const body: any = {
-      model: "google/gemini-3-flash-preview",
+      model: "google/gemini-2.5-flash-lite",
       messages: aiMessages,
     };
 
     if (addAsIssue) {
-      body.tools = [
-        {
-          type: "function",
-          function: {
-            name: "analyze_and_create_issue",
-            description: "Analyze the issue, provide a detailed response, and extract structured data for creating a database entry",
-            parameters: {
-              type: "object",
-              properties: {
-                reply: { type: "string", description: "Full markdown analysis and fix suggestions for the user" },
-                title: { type: "string", description: "Concise issue title" },
-                description: { type: "string", description: "Brief issue description" },
-                category: { type: "string", enum: ["Bug", "Network", "Access", "Hardware", "Software", "Security", "Other"] },
-                ai_suggested_fix: { type: "string", description: "Step-by-step actionable fix" },
-                web_fix: { type: "string", description: "Best known community/web solution" },
-              },
-              required: ["reply", "title", "description", "category", "ai_suggested_fix", "web_fix"],
-              additionalProperties: false,
+      body.tools = [{
+        type: "function",
+        function: {
+          name: "analyze_and_create_issue",
+          description: "Analyze the issue, provide a detailed response, and extract structured data for creating a database entry",
+          parameters: {
+            type: "object",
+            properties: {
+              reply: { type: "string", description: "Full markdown analysis and fix suggestions for the user" },
+              title: { type: "string", description: "Concise issue title" },
+              description: { type: "string", description: "Brief issue description" },
+              category: { type: "string", enum: ["Bug", "Network", "Access", "Hardware", "Software", "Security", "Other"] },
+              ai_suggested_fix: { type: "string", description: "Step-by-step actionable fix" },
+              web_fix: { type: "string", description: "Best known community/web solution" },
             },
+            required: ["reply", "title", "description", "category", "ai_suggested_fix", "web_fix"],
+            additionalProperties: false,
           },
         },
-      ];
+      }];
       body.tool_choice = { type: "function", function: { name: "analyze_and_create_issue" } };
     }
+
+    await throttle();
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -124,16 +155,8 @@ Be concise, use markdown formatting with generous spacing, and focus on actionab
     });
 
     if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limits exceeded, please try again later." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Payment required, please add funds." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      if (response.status === 429) return new Response(JSON.stringify({ error: "Rate limits exceeded, please try again later." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (response.status === 402) return new Response(JSON.stringify({ error: "Payment required, please add funds." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       const t = await response.text();
       console.error("AI error:", response.status, t);
       throw new Error("AI gateway error");
@@ -169,7 +192,10 @@ Be concise, use markdown formatting with generous spacing, and focus on actionab
       reply = aiData.choices?.[0]?.message?.content || "No response from AI.";
     }
 
-    return new Response(JSON.stringify({ reply, issueCreated }), {
+    const result = { reply, issueCreated };
+    if (!addAsIssue) setCache(cacheKey, result);
+
+    return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
