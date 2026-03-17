@@ -4,8 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Brain, Target, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Loader2, Brain, Target, CheckCircle2, AlertCircle, Database } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIStatus } from '@/hooks/useAIStatus';
 
 interface RootCauseData {
   root_cause_title: string;
