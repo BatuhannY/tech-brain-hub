@@ -100,7 +100,7 @@ const GlobalInsights = () => {
           Global Insights
         </h3>
         <Button onClick={runAnalysis} disabled={analyzing} variant="outline" size="sm" className="gap-1.5">
-          {analyzing ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Analyzing…</> : <><Target className="h-3.5 w-3.5" /> Root Cause Analysis</>}
+          {analyzing ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Analyzing…</> : isAIOffline ? <><Database className="h-3.5 w-3.5" /> DB Analysis</> : <><Target className="h-3.5 w-3.5" /> Root Cause Analysis</>}
         </Button>
       </div>
 
