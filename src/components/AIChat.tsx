@@ -3,9 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Send, Loader2, Bot, User, CheckCircle2, Sparkles, RotateCcw } from 'lucide-react';
+import { Send, Loader2, Bot, User, CheckCircle2, Sparkles, RotateCcw, Database } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
+import { useAIStatus } from '@/hooks/useAIStatus';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 
@@ -13,7 +14,51 @@ interface AIChatProps {
   onIssueCreated?: () => void;
 }
 
+// Local DB-based response when AI is offline
+async function getDBResponse(userMsg: string): Promise<string> {
+  const { data: issues } = await supabase
+    .from('issue_logs')
+    .select('*')
+    .order('report_count', { ascending: false })
+    .limit(100);
+
+  if (!issues?.length) return "No issues in the database yet. Add issues to get started.";
+
+  const lower = userMsg.toLowerCase();
+  const words = lower.split(/\s+/).filter(Boolean);
+
+  const scored = issues.map(issue => {
+    const text = `${issue.title} ${issue.description || ''} ${issue.category} ${issue.internal_fix || ''} ${issue.ai_suggested_fix || ''}`.toLowerCase();
+    let score = 0;
+    words.forEach(w => { if (text.includes(w)) score += 1; });
+    if (issue.title.toLowerCase().includes(lower)) score += 3;
+    return { issue, score };
+  }).filter(s => s.score > 0).sort((a, b) => b.score - a.score).slice(0, 3);
+
+  if (scored.length === 0) {
+    return `No matching issues found in the database for "${userMsg}".\n\nThere are **${issues.length}** issues in the knowledge base. Try different keywords or browse the Issues tab.`;
+  }
+
+  let response = `🔍 **Database Search Results** *(AI offline — showing matches from knowledge base)*\n\nFound **${scored.length}** relevant issue(s):\n\n`;
+
+  scored.forEach(({ issue }, i) => {
+    response += `---\n\n### ${i + 1}. ${issue.title}\n\n`;
+    response += `**Category:** ${issue.category} | **Status:** ${issue.status}`;
+    if (issue.report_count > 1) response += ` | **Reports:** ${issue.report_count}`;
+    response += '\n\n';
+    if (issue.description) response += `${issue.description}\n\n`;
+
+    const fix = issue.internal_fix || issue.solution_steps || issue.ai_suggested_fix || issue.web_fix;
+    if (fix) {
+      response += `> ✅ **Known Fix:**\n>\n> ${fix.replace(/\n/g, '\n> ')}\n\n`;
+    }
+  });
+
+  return response;
+}
+
 const AIChat = ({ onIssueCreated }: AIChatProps) => {
+  const { isAIOffline, checkAIError } = useAIStatus();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -36,20 +81,33 @@ const AIChat = ({ onIssueCreated }: AIChatProps) => {
     setLoading(true);
     setLastIssueAdded(false);
 
+    // If AI is offline, use DB fallback
+    if (isAIOffline) {
+      try {
+        const reply = await getDBResponse(text);
+        setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+      } catch {
+        setMessages(prev => [...prev, { role: 'assistant', content: 'Failed to search the database.' }]);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     try {
       const { data, error } = await supabase.functions.invoke('ai-chat', {
         body: { messages: allMessages, addAsIssue },
       });
       if (error) throw error;
       if (data?.error) {
-        if (data.error.includes('Rate limit')) {
-          toast.error('Rate limited. Please wait and try again.');
-        } else if (data.error.includes('Payment')) {
-          toast.error('AI credits exhausted. Please add credits.');
-        } else {
-          throw new Error(data.error);
+        if (checkAIError(data.error)) {
+          // Fallback to DB
+          const reply = await getDBResponse(text);
+          setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+          toast.info('AI offline — switched to database mode');
+          return;
         }
-        return;
+        throw new Error(data.error);
       }
 
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
@@ -60,7 +118,13 @@ const AIChat = ({ onIssueCreated }: AIChatProps) => {
         onIssueCreated?.();
       }
     } catch (err: any) {
-      toast.error(err.message || 'AI request failed');
+      // Try DB fallback on any error
+      try {
+        const reply = await getDBResponse(text);
+        setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+      } catch {
+        toast.error(err.message || 'AI request failed');
+      }
     } finally {
       setLoading(false);
     }
@@ -78,12 +142,16 @@ const AIChat = ({ onIssueCreated }: AIChatProps) => {
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-6">
             <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <Sparkles className="h-8 w-8 text-primary" />
+              {isAIOffline ? <Database className="h-8 w-8 text-primary" /> : <Sparkles className="h-8 w-8 text-primary" />}
             </div>
             <div>
-              <p className="text-base font-semibold text-foreground">AI Issue Analyst</p>
+              <p className="text-base font-semibold text-foreground">
+                {isAIOffline ? 'Knowledge Base Search' : 'AI Issue Analyst'}
+              </p>
               <p className="text-sm text-muted-foreground mt-2 max-w-sm leading-relaxed">
-                Describe a tech issue and I'll analyze it, suggest fixes from our knowledge base, and help categorize it for future reference.
+                {isAIOffline
+                  ? 'AI is currently offline. Describe an issue and I\'ll search the knowledge base for matching solutions.'
+                  : 'Describe a tech issue and I\'ll analyze it, suggest fixes from our knowledge base, and help categorize it for future reference.'}
               </p>
             </div>
             <div className="flex flex-wrap gap-2 mt-2 max-w-md justify-center">
@@ -155,14 +223,23 @@ const AIChat = ({ onIssueCreated }: AIChatProps) => {
       <div className="border-t border-border pt-3 space-y-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Checkbox
-              id="addIssue"
-              checked={addAsIssue}
-              onCheckedChange={(v) => setAddAsIssue(!!v)}
-            />
-            <label htmlFor="addIssue" className="text-xs text-muted-foreground cursor-pointer select-none">
-              Add as a new issue
-            </label>
+            {!isAIOffline && (
+              <>
+                <Checkbox
+                  id="addIssue"
+                  checked={addAsIssue}
+                  onCheckedChange={(v) => setAddAsIssue(!!v)}
+                />
+                <label htmlFor="addIssue" className="text-xs text-muted-foreground cursor-pointer select-none">
+                  Add as a new issue
+                </label>
+              </>
+            )}
+            {isAIOffline && (
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Database className="h-3 w-3" /> Database mode
+              </span>
+            )}
           </div>
           {messages.length > 0 && (
             <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground gap-1" onClick={handleClear}>
@@ -176,7 +253,7 @@ const AIChat = ({ onIssueCreated }: AIChatProps) => {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-            placeholder="Describe a tech issue..."
+            placeholder={isAIOffline ? "Search the knowledge base..." : "Describe a tech issue..."}
             className="min-h-[44px] max-h-32 resize-none text-sm rounded-xl"
             rows={1}
           />
