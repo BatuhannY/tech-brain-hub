@@ -306,6 +306,7 @@ const Dashboard = () => {
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-8">
+        <AIOfflineBanner />
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="w-full bg-secondary/60 p-1 rounded-xl h-auto">
             <TabsTrigger value="issues" className="flex-1 text-xs py-2.5 rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm transition-all">Issues</TabsTrigger>
