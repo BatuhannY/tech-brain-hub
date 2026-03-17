@@ -3,22 +3,51 @@ import { supabase } from '@/integrations/supabase/client';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, Database } from 'lucide-react';
+import { useAIStatus } from '@/hooks/useAIStatus';
 
 interface FAQEntry {
   question: string;
   answer: string;
 }
 
+function generateLocalFAQs(issues: any[]): FAQEntry[] {
+  // Group resolved issues by category and pick the most reported ones
+  const resolved = issues.filter(i => i.status === 'Resolved' && (i.internal_fix || i.solution_steps || i.ai_suggested_fix));
+  if (!resolved.length) return [];
+
+  const sorted = [...resolved].sort((a, b) => (b.report_count || 1) - (a.report_count || 1));
+  return sorted.slice(0, 5).map(issue => {
+    const fix = issue.internal_fix || issue.solution_steps || issue.ai_suggested_fix || issue.web_fix || '';
+    // Strip HTML tags for plain text display
+    const cleanFix = fix.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(/&amp;/g, '&').trim();
+    return {
+      question: `How do I fix: ${issue.title}?`,
+      answer: cleanFix || 'See the issue details for resolution steps.',
+    };
+  });
+}
+
 const DynamicFAQ = ({ issues }: { issues: any[] }) => {
+  const { isAIOffline, checkAIError } = useAIStatus();
   const [faqs, setFaqs] = useState<FAQEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [usingDB, setUsingDB] = useState(false);
 
   useEffect(() => {
     if (!issues?.length || loaded) return;
     setLoaded(true);
     setLoading(true);
+
+    if (isAIOffline) {
+      // Use local DB-based FAQ generation
+      const localFaqs = generateLocalFAQs(issues);
+      setFaqs(localFaqs);
+      setUsingDB(true);
+      setLoading(false);
+      return;
+    }
 
     const generateFAQ = async () => {
       try {
@@ -32,20 +61,33 @@ const DynamicFAQ = ({ issues }: { issues: any[] }) => {
             })),
           },
         });
-        console.log('FAQ response:', JSON.stringify(response.data));
-        if (response.error) { console.error('FAQ invoke error:', response.error); return; }
+        if (response.error) { console.error('FAQ invoke error:', response.error); }
         const result = response.data;
-        if (result?.error) { console.error('FAQ AI error:', result.error); return; }
+        if (result?.error) {
+          if (checkAIError(result.error)) {
+            // Fallback to local
+            const localFaqs = generateLocalFAQs(issues);
+            setFaqs(localFaqs);
+            setUsingDB(true);
+            return;
+          }
+          console.error('FAQ AI error:', result.error);
+          return;
+        }
         if (result?.faqs) setFaqs(result.faqs);
       } catch (err) {
         console.error('FAQ generation failed:', err);
+        // Fallback to local
+        const localFaqs = generateLocalFAQs(issues);
+        setFaqs(localFaqs);
+        setUsingDB(true);
       } finally {
         setLoading(false);
       }
     };
 
     generateFAQ();
-  }, [issues, loaded]);
+  }, [issues, loaded, isAIOffline]);
 
   if (loading) {
     return (
@@ -74,9 +116,12 @@ const DynamicFAQ = ({ issues }: { issues: any[] }) => {
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center">
-            <HelpCircle className="h-3.5 w-3.5 text-primary" />
+            {usingDB ? <Database className="h-3.5 w-3.5 text-primary" /> : <HelpCircle className="h-3.5 w-3.5 text-primary" />}
           </div>
-          <CardTitle className="text-sm font-semibold">Frequently Asked Questions</CardTitle>
+          <CardTitle className="text-sm font-semibold">
+            Frequently Asked Questions
+            {usingDB && <span className="text-xs font-normal text-muted-foreground ml-2">(from database)</span>}
+          </CardTitle>
         </div>
       </CardHeader>
       <CardContent className="pt-0">

@@ -4,8 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Brain, Target, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Loader2, Brain, Target, CheckCircle2, AlertCircle, Database } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIStatus } from '@/hooks/useAIStatus';
 
 interface RootCauseData {
   root_cause_title: string;
@@ -18,8 +19,10 @@ interface RootCauseData {
 }
 
 const GlobalInsights = () => {
+  const { isAIOffline, checkAIError } = useAIStatus();
   const [insight, setInsight] = useState<RootCauseData | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [usingDB, setUsingDB] = useState(false);
 
   const { data: issues } = useQuery({
     queryKey: ['issue_logs'],
@@ -30,19 +33,57 @@ const GlobalInsights = () => {
     },
   });
 
+  const runLocalAnalysis = (issueList: any[]) => {
+    // Group by category
+    const cats: Record<string, number> = {};
+    issueList.forEach(i => { cats[i.category] = (cats[i.category] || 0) + 1; });
+    const topCat = Object.entries(cats).sort((a, b) => b[1] - a[1])[0];
+    const unresolved = issueList.filter(i => i.status !== 'Resolved');
+
+    setInsight({
+      root_cause_title: `Most issues are in the "${topCat[0]}" category`,
+      root_cause_description: `${topCat[1]} of ${issueList.length} issues fall under ${topCat[0]}. ${unresolved.length} issues remain unresolved.`,
+      confidence: 60,
+      affected_categories: Object.keys(cats),
+      affected_issue_count: issueList.length,
+      recommended_actions: [
+        `Focus on resolving the ${unresolved.length} unresolved issues`,
+        `Review ${topCat[0]} issues for common patterns`,
+        'Ensure all resolved issues have documented fixes',
+      ],
+      supporting_evidence: issueList.slice(0, 3).map(i => `"${i.title}" (${i.category}, ${i.status})`),
+    });
+    setUsingDB(true);
+  };
+
   const runAnalysis = async () => {
     if (!issues?.length) { toast.error('No issues to analyze'); return; }
     setAnalyzing(true);
+
+    if (isAIOffline) {
+      runLocalAnalysis(issues);
+      setAnalyzing(false);
+      return;
+    }
+
     try {
       const last50 = issues.slice(0, 50);
       const { data, error } = await supabase.functions.invoke('ai-analytics', {
         body: { mode: 'root-cause', issues: last50 },
       });
       if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      if (data?.error) {
+        if (checkAIError(data.error)) {
+          runLocalAnalysis(issues);
+          return;
+        }
+        throw new Error(data.error);
+      }
       setInsight(data);
+      setUsingDB(false);
     } catch (err: any) {
-      toast.error(err.message || 'Analysis failed');
+      // Fallback to local
+      runLocalAnalysis(issues);
     } finally {
       setAnalyzing(false);
     }
@@ -59,7 +100,7 @@ const GlobalInsights = () => {
           Global Insights
         </h3>
         <Button onClick={runAnalysis} disabled={analyzing} variant="outline" size="sm" className="gap-1.5">
-          {analyzing ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Analyzing…</> : <><Target className="h-3.5 w-3.5" /> Root Cause Analysis</>}
+          {analyzing ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Analyzing…</> : isAIOffline ? <><Database className="h-3.5 w-3.5" /> DB Analysis</> : <><Target className="h-3.5 w-3.5" /> Root Cause Analysis</>}
         </Button>
       </div>
 

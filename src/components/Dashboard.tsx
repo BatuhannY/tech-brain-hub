@@ -27,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import GlobalInsights from '@/components/GlobalInsights';
+import AIOfflineBanner from '@/components/AIOfflineBanner';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
@@ -304,7 +305,8 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
+      <main className="max-w-6xl mx-auto px-6 py-8 space-y-5">
+        <AIOfflineBanner />
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="w-full bg-secondary/60 p-1 rounded-xl h-auto">
             <TabsTrigger value="issues" className="flex-1 text-xs py-2.5 rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm transition-all">Issues</TabsTrigger>
