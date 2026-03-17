@@ -305,7 +305,7 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
+      <main className="max-w-6xl mx-auto px-6 py-8 space-y-5">
         <AIOfflineBanner />
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="w-full bg-secondary/60 p-1 rounded-xl h-auto">
