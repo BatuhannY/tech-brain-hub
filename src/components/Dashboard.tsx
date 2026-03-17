@@ -27,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import GlobalInsights from '@/components/GlobalInsights';
+import AIOfflineBanner from '@/components/AIOfflineBanner';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
