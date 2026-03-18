@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, MessageSquare, ArrowRight, Sparkles, Check } from 'lucide-react';
+import { Loader2, MessageSquare, ArrowRight, Sparkles, Check, Database } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIStatus } from '@/hooks/useAIStatus';
 
 interface ParsedData {
   title: string;
@@ -19,7 +20,34 @@ interface QuickImportProps {
   onApply: (data: { title: string; description: string; fix: string; category: string }) => void;
 }
 
+const CATEGORY_KEYWORDS: Record<string, string[]> = {
+  'Authentication': ['login', 'log in', 'sign in', 'signin', 'password', 'auth', 'sso', 'mfa', '2fa', 'credential'],
+  'Network': ['network', 'vpn', 'wifi', 'wi-fi', 'dns', 'proxy', 'firewall', 'connection', 'internet'],
+  'Email': ['email', 'outlook', 'smtp', 'inbox', 'mail', 'exchange'],
+  'Hardware': ['printer', 'monitor', 'keyboard', 'mouse', 'laptop', 'dock', 'usb', 'hardware'],
+  'Software': ['install', 'update', 'crash', 'freeze', 'error', 'bug', 'software', 'app', 'application'],
+  'Access': ['permission', 'access', 'denied', 'unauthorized', 'role', 'admin'],
+  'Performance': ['slow', 'lag', 'performance', 'memory', 'cpu', 'disk', 'storage'],
+};
+
+function parseLocally(transcript: string): ParsedData {
+  const firstSentence = transcript.split(/[.!?\n]/).filter(s => s.trim())[0]?.trim() || transcript.slice(0, 80);
+  const title = firstSentence.length > 100 ? firstSentence.slice(0, 97) + '...' : firstSentence;
+
+  const lower = transcript.toLowerCase();
+  let suggested_category = 'General';
+  for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+    if (keywords.some(kw => lower.includes(kw))) {
+      suggested_category = cat;
+      break;
+    }
+  }
+
+  return { title, description: transcript.trim(), proposed_fix: '', suggested_category, confidence: 60 };
+}
+
 const QuickImport = ({ onApply }: QuickImportProps) => {
+  const { isAIOffline, checkAIError } = useAIStatus();
   const [transcript, setTranscript] = useState('');
   const [parsing, setParsing] = useState(false);
   const [parsed, setParsed] = useState<ParsedData | null>(null);
@@ -28,21 +56,41 @@ const QuickImport = ({ onApply }: QuickImportProps) => {
   const handleParse = async () => {
     if (!transcript.trim()) { toast.error('Paste a chat transcript first'); return; }
     setParsing(true);
-      setParsed(null);
-      setFixApproved(false);
-      try {
-        const { data, error } = await supabase.functions.invoke('ai-analytics', {
-          body: { mode: 'parse-chat', chatTranscript: transcript.trim() },
-        });
-        if (error) throw error;
-        if (data?.error) throw new Error(data.error);
-        setParsed(data);
-        toast.success('Chat transcript parsed successfully');
-      } catch (err: any) {
-        toast.error(err.message || 'Failed to parse transcript');
-      } finally {
-        setParsing(false);
+    setParsed(null);
+    setFixApproved(false);
+
+    if (isAIOffline) {
+      const result = parseLocally(transcript);
+      setParsed(result);
+      toast.success('Transcript parsed locally (database mode)');
+      setParsing(false);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-analytics', {
+        body: { mode: 'parse-chat', chatTranscript: transcript.trim() },
+      });
+      if (error) throw error;
+      if (data?.error) {
+        if (checkAIError(data.error)) {
+          const result = parseLocally(transcript);
+          setParsed(result);
+          toast.info('AI offline — parsed locally');
+          return;
+        }
+        throw new Error(data.error);
       }
+      setParsed(data);
+      toast.success('Chat transcript parsed successfully');
+    } catch (err: any) {
+      // Fallback to local parsing on any error
+      const result = parseLocally(transcript);
+      setParsed(result);
+      toast.info('AI unavailable — parsed locally');
+    } finally {
+      setParsing(false);
+    }
   };
 
   const handleApply = () => {
