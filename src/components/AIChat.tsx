@@ -14,6 +14,11 @@ interface AIChatProps {
   onIssueCreated?: () => void;
 }
 
+function stripHtml(html: string): string {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return doc.body.textContent || '';
+}
+
 // Local DB-based response when AI is offline
 async function getDBResponse(userMsg: string): Promise<string> {
   const { data: issues } = await supabase
@@ -28,7 +33,7 @@ async function getDBResponse(userMsg: string): Promise<string> {
   const words = lower.split(/\s+/).filter(Boolean);
 
   const scored = issues.map(issue => {
-    const text = `${issue.title} ${issue.description || ''} ${issue.category} ${issue.internal_fix || ''} ${issue.ai_suggested_fix || ''}`.toLowerCase();
+    const text = `${issue.title} ${issue.description || ''} ${issue.category} ${stripHtml(issue.internal_fix || '')} ${issue.ai_suggested_fix || ''}`.toLowerCase();
     let score = 0;
     words.forEach(w => { if (text.includes(w)) score += 1; });
     if (issue.title.toLowerCase().includes(lower)) score += 3;
@@ -48,7 +53,7 @@ async function getDBResponse(userMsg: string): Promise<string> {
     response += '\n\n';
     if (issue.description) response += `${issue.description}\n\n`;
 
-    const fix = issue.internal_fix || issue.solution_steps || issue.ai_suggested_fix || issue.web_fix;
+    const fix = stripHtml(issue.internal_fix || '') || issue.solution_steps || issue.ai_suggested_fix || issue.web_fix;
     if (fix) {
       response += `> ✅ **Known Fix:**\n>\n> ${fix.replace(/\n/g, '\n> ')}\n\n`;
     }

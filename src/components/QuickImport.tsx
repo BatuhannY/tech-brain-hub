@@ -122,7 +122,7 @@ const QuickImport = ({ onApply }: QuickImportProps) => {
       />
 
       <Button onClick={handleParse} disabled={parsing || !transcript.trim()} size="sm" variant="outline" className="gap-1.5">
-        {parsing ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Parsing…</> : <><Sparkles className="h-3.5 w-3.5" /> Parse Transcript</>}
+        {parsing ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Parsing…</> : isAIOffline ? <><Database className="h-3.5 w-3.5" /> Parse (Database Mode)</> : <><Sparkles className="h-3.5 w-3.5" /> Parse Transcript</>}
       </Button>
 
       {parsed && (
