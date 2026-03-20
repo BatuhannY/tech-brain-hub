@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Bug, Pencil, Trash2, ChevronRight, Copy, BookOpen, Download, FileText, FileSpreadsheet, LogOut, Shield } from 'lucide-react';
+import { Plus, Bug, Pencil, Trash2, ChevronRight, Copy, BookOpen, Download, FileText, FileSpreadsheet, LogOut, Shield, Slack, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -266,6 +266,24 @@ const Dashboard = () => {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-muted-foreground hover:text-foreground"
+              onClick={() => navigate('/slack-preview')}
+              title="Slack Preview"
+            >
+              <Slack className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-muted-foreground hover:text-foreground"
+              onClick={() => navigate('/integrations')}
+              title="Integrations"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
             <Button
               variant="ghost"
               size="sm"
