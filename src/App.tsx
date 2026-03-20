@@ -11,6 +11,8 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminSignup from "./pages/AdminSignup";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./components/Dashboard";
+import SlackSimulator from "./pages/SlackSimulator";
+import Integrations from "./pages/Integrations";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
