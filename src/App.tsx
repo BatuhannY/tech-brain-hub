@@ -31,6 +31,8 @@ const App = () => (
               <Route path="/admin/signup" element={<AdminSignup />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/slack-preview" element={<ProtectedRoute><SlackSimulator /></ProtectedRoute>} />
+              <Route path="/integrations" element={<ProtectedRoute><Integrations /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthProvider>

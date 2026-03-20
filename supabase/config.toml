@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.ai-analytics]
 verify_jwt = false
+
+[functions.slack-webhook]
+verify_jwt = false
