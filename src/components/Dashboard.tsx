@@ -270,6 +270,24 @@ const Dashboard = () => {
               variant="ghost"
               size="sm"
               className="gap-1.5 text-muted-foreground hover:text-foreground"
+              onClick={() => navigate('/slack-preview')}
+              title="Slack Preview"
+            >
+              <Slack className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-muted-foreground hover:text-foreground"
+              onClick={() => navigate('/integrations')}
+              title="Integrations"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-muted-foreground hover:text-foreground"
               onClick={async () => { await signOut(); navigate('/admin'); }}
             >
               <LogOut className="h-4 w-4" />
