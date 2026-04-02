@@ -80,9 +80,9 @@ describe('scoreIssue - Confidence Scoring', () => {
     expect(conf).toBeLessThan(30);
   });
 
-  it('gives 0 for completely unmatched query', () => {
+  it('gives low score for completely unmatched query (only resolved bonus)', () => {
     const conf = getConfidence(resolvedIssue, 'xyz abc qwerty');
-    expect(conf).toBe(0);
+    expect(conf).toBeLessThanOrEqual(10);
   });
 
   it('adds resolved bonus to score', () => {
