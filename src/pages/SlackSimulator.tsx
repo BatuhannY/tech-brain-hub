@@ -56,21 +56,31 @@ function stripHtml(html: string): string {
 }
 
 function scoreIssue(issue: any, query: string): { score: number; maxScore: number } {
-  const lower = query.toLowerCase();
+  const lower = query.toLowerCase().trim();
+  const titleLower = issue.title.toLowerCase();
+
+  // Exact title match → 99% confidence
+  if (titleLower === lower || titleLower.includes(lower) || lower.includes(titleLower)) {
+    return { score: 99, maxScore: 100 };
+  }
+
   const words = lower.split(/\s+/).filter(w => w.length > 2);
+  if (words.length === 0) return { score: 0, maxScore: 1 };
+
   const text = `${issue.title} ${issue.description || ''} ${issue.category} ${stripHtml(issue.internal_fix || '')} ${issue.ai_suggested_fix || ''} ${issue.solution_steps || ''}`.toLowerCase();
+  const titleWords = titleLower.split(/\s+/).filter(w => w.length > 2);
 
-  let score = 0;
-  let maxScore = words.length + 5; // +5 for bonus possibilities
-  words.forEach(w => { if (text.includes(w)) score += 1; });
-  if (issue.title.toLowerCase().includes(lower)) score += 3;
-  if (issue.status === 'Resolved') score += 1;
-  // partial title match
-  const titleWords = issue.title.toLowerCase().split(/\s+/);
-  const matchingTitleWords = words.filter(w => titleWords.some((tw: string) => tw.includes(w)));
-  if (matchingTitleWords.length > 0) score += 1;
+  // Count how many query words appear in the issue text
+  const matchedWords = words.filter(w => text.includes(w)).length;
+  const wordMatchRatio = matchedWords / words.length; // 0-1
 
-  return { score, maxScore };
+  // Count how many query words appear specifically in the title
+  const titleMatchedWords = words.filter(w => titleWords.some((tw: string) => tw.includes(w) || w.includes(tw))).length;
+  const titleMatchRatio = titleMatchedWords / words.length; // 0-1
+
+  // Weighted score: 40% word match + 50% title match + 10% resolved bonus
+  const score = (wordMatchRatio * 40) + (titleMatchRatio * 50) + (issue.status === 'Resolved' ? 10 : 0);
+  return { score, maxScore: 100 };
 }
 
 async function strictSearch(query: string): Promise<{ issue: any | null; confidence: number; response: string }> {
