@@ -78,8 +78,9 @@ function scoreIssue(issue: any, query: string): { score: number; maxScore: numbe
   const titleMatchedWords = words.filter(w => titleWords.some((tw: string) => tw.includes(w) || w.includes(tw))).length;
   const titleMatchRatio = titleMatchedWords / words.length; // 0-1
 
-  // Weighted score: 40% word match + 50% title match + 10% resolved bonus
-  const score = (wordMatchRatio * 40) + (titleMatchRatio * 50) + (issue.status === 'Resolved' ? 10 : 0);
+  // Weighted score: 40% word match + 50% title match + 10% resolved bonus (only if some match)
+  const baseScore = (wordMatchRatio * 40) + (titleMatchRatio * 50);
+  const score = baseScore > 0 ? baseScore + (issue.status === 'Resolved' ? 10 : 0) : 0;
   return { score, maxScore: 100 };
 }
 
